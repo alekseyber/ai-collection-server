@@ -19,10 +19,8 @@ function formattedText(text) {
 }
 
 function formatingResponseAiContent(response) {
-    if (response?.content) {
-        return response.content;
-    }
-    return response;
+    const content = response?.content || response;
+    return content.replace(/<|im_(start|end)|>/g, '');
 }
 
 export const utils = {

@@ -88,7 +88,10 @@ async function askLlamacpp(history, userId, model) {
             body: JSON.stringify({
                 prompt,
                 n_predict: 64,
-                stream: false
+                stream: false,
+                top_p: 0.7,
+                temperature: 0.3,
+                max_tokens: 20,
             })
         });
 
