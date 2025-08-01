@@ -1,0 +1,22 @@
+.DS_STORE
+node_modules
+.idea
+*.iml
+.vscode
+*.swp
+*.swo
+.env*.local
+.env
+*~
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+/app/.DS_STORE
+/app/node_modules
+/redis/dump.rdb
+/redis/appendonlydir

@@ -1,0 +1,97 @@
+services:
+  llamacpp-server:
+    image: ghcr.io/ggml-org/llama.cpp:server # https://github.com/ggml-org/llama.cpp/tree/master/tools/server
+    container_name: llamacpp-ggml-model
+    ports:
+      - 12534:12534
+    volumes:
+      - /mnt/truenas/llm/.bin/models:/models
+    networks:
+      - proxy
+    environment:
+      # alternatively, you can use "LLAMA_ARG_MODEL_URL" to download the model
+      LLAMA_ARG_MODEL: /models/ggml-model-q4_0.gguf
+      LLAMA_ARG_CTX_SIZE: 4096
+      LLAMA_ARG_N_PARALLEL: 2
+      LLAMA_ARG_ENDPOINT_METRICS: 1
+      LLAMA_ARG_PORT: 12534
+    restart: unless-stopped
+  llamacpp-server2:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: llamacpp-llama-2-7b-model
+    ports:
+      - 12535:12535
+    volumes:
+      - /mnt/truenas/llm/.bin/models:/models
+    networks:
+      - proxy
+    environment:
+      # alternatively, you can use "LLAMA_ARG_MODEL_URL" to download the model
+      LLAMA_ARG_MODEL: /models/llama-2-7b-chat.Q4_K_M.gguf
+      LLAMA_ARG_CTX_SIZE: 4096
+      LLAMA_ARG_N_PARALLEL: 2
+      LLAMA_ARG_ENDPOINT_METRICS: 1
+      LLAMA_ARG_PORT: 12535
+    restart: unless-stopped
+  llamacpp-server3:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: qwen-ai-research
+    ports:
+      - 12536:12536
+    volumes:
+      - /mnt/truenas/llm/.bin/models:/models
+    networks:
+      - proxy
+    environment:
+      # alternatively, you can use "LLAMA_ARG_MODEL_URL" to download the model
+      LLAMA_ARG_MODEL: /models/qwen-ai-research-qa-q4_k_m.gguf
+      LLAMA_ARG_CTX_SIZE: 4096
+      LLAMA_ARG_N_PARALLEL: 2
+      LLAMA_ARG_ENDPOINT_METRICS: 1
+      LLAMA_ARG_PORT: 12536
+    restart: unless-stopped
+  ollama:
+    image: ollama/ollama
+    container_name: ollama-new
+    ports:
+      - "11434:11434"
+    volumes:
+      - /mnt/truenas/llm/.ollama:/root/.ollama
+    networks:
+      - proxy
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - /home/berestov/docker/nodejs/redis/data:/data
+    networks:
+      - proxy
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+  nodejs:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - ollama
+    container_name: nodejs
+    volumes:
+      # Монтируем только необходимые файлы для разработки
+      - /home/berestov/docker/nodejs/app/index.js:/usr/src/app/index.js
+      - /home/berestov/docker/nodejs/app/modules:/usr/src/app/modules
+      - /home/berestov/docker/nodejs/app/package.json:/usr/src/app/package.json
+      - /home/berestov/docker/nodejs/app/package-lock.json:/usr/src/app/package-lock.json
+    ports:
+      - "3000:3000"
+    networks:
+      - proxy
+    restart: unless-stopped
+
+
+networks:
+  proxy:
+    external: true
