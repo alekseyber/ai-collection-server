@@ -28,5 +28,6 @@ app/.env.test.local
 app/.env.production.local
 app/.DS_Store
 
-/redis/dump.rdb
-/redis/appendonlydir
+redis/
+redis/data
+redis/appendonlydir
