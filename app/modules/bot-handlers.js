@@ -239,7 +239,7 @@ function setupBotHandlers() {
 //  */
 export async function initializeBot() {
     try {
-        const token = await redisInstance.getConfig('telegram_token', config.DEFAULT_TOKEN);
+        const token = await redisInstance.getConfig('telegram_token', config.DEFAULT_TOKEN_TELEGRAM);
         config.setStartPrompt(await redisInstance.getConfig('start_prompt', config.DEFAULT_START_PROMPT));
         config.setStartMessage(await redisInstance.getConfig('start_message', config.DEFAULT_START_MESSAGE));
 

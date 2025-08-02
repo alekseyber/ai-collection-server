@@ -22,4 +22,5 @@ app/node_modules
 
 redis/
 
-.env.dev
+
+.env.nodejs

@@ -23,9 +23,30 @@ function formatingResponseAiContent(response) {
     return content.replace(/<|im_(start|end)|>/g, '');
 }
 
+/**
+ * Преобразует строку с разделителями в массив чисел.
+ * @param {string} input - Входная строка (например, "692059922,1769298937").
+ * @returns {number[]} Массив чисел, соответствующих допустимым элементам строки.
+ */
+function parseNumbers(input) {
+  if (input === undefined) return [];
+
+  return input
+    .split(',')
+    .map(part => {
+      const trimmed = part.trim();
+      if (trimmed === '') return null; // Игнорируем пустые элементы
+      const num = Number(trimmed);
+      return isNaN(num) ? null : num; // Проверяем, что это число
+    })
+    .filter(num => num !== null); // Удаляем null значения
+}
+
+
 export const utils = {
     escapeMarkdownV2,
     getHasMarkdownV2Status,
     formattedText,
     formatingResponseAiContent,
+    parseNumbers,
 }

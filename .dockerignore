@@ -31,3 +31,6 @@ app/.DS_Store
 redis/
 redis/data
 redis/appendonlydir
+
+.env
+.env.nodejs

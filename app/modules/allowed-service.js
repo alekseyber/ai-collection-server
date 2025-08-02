@@ -2,11 +2,12 @@ import { config } from './config/config.js';
 
 
 function getAdminPermission(userId) {
-    return config.ADMIN_USERS.includes(userId)
+    return config.ADMIN_USERS_TELEGRAM.includes(userId)
 }
 
+
 function getSuperUserPermission(userId) {
-    return config.SUPER_USERS.includes(userId)
+    return config.SUPER_USERS_TELEGRAM.includes(userId)
 }
 
 function getModelList(userId) {

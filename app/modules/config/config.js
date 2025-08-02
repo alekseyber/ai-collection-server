@@ -1,12 +1,12 @@
-
+import { utils } from "../utils/utils.js";
 // Конфигурационные константы и переменные
 
 // Значения по умолчанию
-const DEFAULT_TOKEN = '8428182610:AAG9wPEN4ly56rzxcQcXzS8DPi5EJERjyoc';
-const DEEPSEEK_API_KEY = "sk-685fb994b9754fb0bf714abf22070808";
-const OPEN_AI_API_KEY_1 = "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";
+const DEFAULT_TOKEN_TELEGRAM = process.env.DEFAULT_TOKEN_TELEGRAM;
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+const OPEN_AI_API_KEY_1 = process.env.OPEN_AI_API_KEY_1;
 
-const OPEN_AI_API_KEY_2 = "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";
+const OPEN_AI_API_KEY_2 = process.env.OPEN_AI_API_KEY_2;
 
 const OPEN_AI_API_KEY = OPEN_AI_API_KEY_1;
 
@@ -86,7 +86,7 @@ const MODELS_CONFIG = {
 const OPEN_ROUTER_MODELS = [MODELS_CONFIG.glm_4_5_air.key, MODELS_CONFIG.moonshotai_kimi_k2.key, MODELS_CONFIG.dolphin_mistral_24b.key];
 const MODEL_DEFAULT = MODELS_CONFIG.ggml;
 
-const ALLOWED_USERS = [692059922, 1769298937];
+
 
 // Глобальные переменные для хранения текущих значений
 let startPrompt = DEFAULT_START_PROMPT;
@@ -94,26 +94,27 @@ let startMessage = "Добро пожаловать! Я твой персона�
 
 const ERROR_MODEL_MESSAGE = "Извините, произошла ошибка при обработке запроса.";
 
-const ADMIN_USERS = [692059922];
-const SUPER_USERS = [692059922, 1769298937];
+
+
+const ADMIN_USERS_TELEGRAM = utils.parseNumbers(process.env.ADMIN_USERS_TELEGRAM);
+const SUPER_USERS_TELEGRAM = utils.parseNumbers(process.env.SUPER_USERS_TELEGRAM);
 
 const setStartPrompt = (value) => { startPrompt = value; };
 const setStartMessage = (value) => { startMessage = value; };
 
 
 export const config = {
-    DEFAULT_TOKEN,
+    DEFAULT_TOKEN_TELEGRAM,
     DEFAULT_START_PROMPT,
     DEFAULT_START_MESSAGE,
-    ALLOWED_USERS,
     MODELS_CONFIG,
     MODEL_DEFAULT,
     ERROR_MODEL_MESSAGE,
     DEEPSEEK_API_KEY,
     OPEN_AI_API_KEY,
     OPEN_ROUTER_MODELS,
-    ADMIN_USERS,
-    SUPER_USERS,
+    ADMIN_USERS_TELEGRAM,
+    SUPER_USERS_TELEGRAM,
     startPrompt,
     startMessage,
     setStartPrompt,

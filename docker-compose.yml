@@ -77,7 +77,9 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - redis
-      - ollama
+    env_file:
+     - ./.env.nodejs.dev
+     - ./.env.nodejs
     container_name: nodejs
     volumes:
       # Монтируем только необходимые файлы для разработки
@@ -86,9 +88,7 @@ services:
       - /home/berestov/docker/nodejs/app/package.json:/usr/src/app/package.json
       - /home/berestov/docker/nodejs/app/package-lock.json:/usr/src/app/package-lock.json
     ports:
-      - "12534:12534"
-      - "12535:12535"
-      - "12536:12536"
+      - "3501:3501"
     networks:
       - proxy
     restart: unless-stopped

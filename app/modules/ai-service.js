@@ -87,11 +87,11 @@ async function askLlamacpp(history, userId, model) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 prompt,
-                n_predict: 64,
+                n_predict: 128,
                 stream: false,
                 top_p: 0.7,
                 temperature: 0.3,
-                max_tokens: 20,
+                max_tokens: 50,
             })
         });
 
