@@ -1,5 +1,4 @@
 import { utils } from '../utils/utils';
-import { ModelsConfig } from "../ai-service"
 
 
 // Конфигурационные константы и переменные
@@ -30,24 +29,68 @@ const DEFAULT_START_PROMPT_2 = "Ты — помощник, который отв
     "Отвечай кратко и по существу на поставленные вопросы. Не начинай разговор сам, не уходи в рассуждения и не отвлекайся от темы. " +
     "Если вопрос непонятен или выходит за рамки твоих возможностей, скажи об этом прямо."
 const DEFAULT_START_MESSAGE = 'Привет! Я бот Леша с локальной языковой моделью. Напиши мне что-нибудь!';
+
+// Типы для моделей AI
+
+export enum ModelsGroupe {
+    OLLAMA = "ollama",
+    LLAMA_CPP = "llama_cpp",
+    OPEN_ROUTER = "open_router",
+    OTHER = "other",
+}
+export interface AIModel {
+    key: string;
+    key_api?: string;
+    text: string;
+    api_url: string;
+    off?: boolean;
+    superUser?: boolean;
+    modelsGroupe: ModelsGroupe,
+}
+
+export interface ModelsConfig {
+    [key: string]: AIModel
+}
+
 const MODELS_CONFIG: ModelsConfig = {
+    deepseek_r1_ollama: {
+        key: "deepseek_r1_ollama",
+        key_api: "deepseek-r1:1.5b",
+        text: "deepseek r1",
+        api_url: "",
+        modelsGroupe: ModelsGroupe.OLLAMA,
+        off: true,
+        superUser: false,
+    },
+       mistral_latest: {
+        key: "mistral_latest",
+        key_api: "mistral:latest",
+        text: "mistral",
+        api_url: "",
+        modelsGroupe: ModelsGroupe.OLLAMA,
+        off: true,
+        superUser: true,
+    },
     llama2_7b: {
         key: "llama2_7b",
         text: "Llama2_7b",
         api_url: "http://llamacpp-llama-2-7b-model:12535/completion",
         off: true,
+        modelsGroupe: ModelsGroupe.LLAMA_CPP,
     },
     ggml: {
         key: "ggml",
         text: 'Ggml',
         api_url: "http://llamacpp-server:12534/completion",
         off: false,
+        modelsGroupe: ModelsGroupe.LLAMA_CPP,
     },
     qwen_ai: {
         key: "qwen_ai",
         text: 'Qwen best local',
         api_url: "http://qwen-ai-research:12536/completion",
         off: false,
+        modelsGroupe: ModelsGroupe.LLAMA_CPP,
     },
     deepseek_chat: {
         key: "deepseek-chat",
@@ -55,6 +98,7 @@ const MODELS_CONFIG: ModelsConfig = {
         api_url: "",
         off: true,
         superUser: true,
+        modelsGroupe: ModelsGroupe.OTHER,
     },
     glm_4_5_air: {
         key_api: "z-ai/glm-4.5-air:free",
@@ -63,6 +107,7 @@ const MODELS_CONFIG: ModelsConfig = {
         api_url: "",
         off: false,
         superUser: true,
+        modelsGroupe: ModelsGroupe.OPEN_ROUTER,
     },
     moonshotai_kimi_k2: {
         key_api: "moonshotai/kimi-k2:free",
@@ -71,6 +116,7 @@ const MODELS_CONFIG: ModelsConfig = {
         api_url: "",
         superUser: true,
         off: false,
+        modelsGroupe: ModelsGroupe.OPEN_ROUTER,
     },
     dolphin_mistral_24b: {
         key_api: "ognitivecomputations/dolphin-mistral-24b-venice-edition:free",
@@ -79,10 +125,32 @@ const MODELS_CONFIG: ModelsConfig = {
         api_url: "",
         superUser: true,
         off: false,
+        modelsGroupe: ModelsGroupe.OPEN_ROUTER,
     },
+    // https://openrouter.ai/deepseek/deepseek-chat-v3-0324:free/api
+    deepseek_chat_v3: {
+        key_api: "deepseek/deepseek-chat-v3-0324:free",
+        key: "deepseek_chat_v3",
+        text: 'DeepSeek V3 0324 OUT',
+        api_url: "",
+        superUser: true,
+        off: false,
+        modelsGroupe: ModelsGroupe.OPEN_ROUTER,
+    },
+    // https://openrouter.ai/deepseek/deepseek-r1-0528:free/api
+    deepseek_r1_0528: {
+        key_api: "deepseek/deepseek-r1-0528:free",
+        key: "deepseek_r1_0528",
+        text: 'DeepSeek: R1 0528 OUT',
+        api_url: "",
+        superUser: true,
+        off: false,
+        modelsGroupe: ModelsGroupe.OPEN_ROUTER,
+    },
+
+
 };
 
-const OPEN_ROUTER_MODELS = [MODELS_CONFIG.glm_4_5_air.key, MODELS_CONFIG.moonshotai_kimi_k2.key, MODELS_CONFIG.dolphin_mistral_24b.key];
 const MODEL_DEFAULT = MODELS_CONFIG.ggml;
 
 
@@ -106,7 +174,6 @@ export const config = {
     DEFAULT_START_PROMPT_2,
     DEFAULT_START_MESSAGE,
     MODELS_CONFIG,
-    OPEN_ROUTER_MODELS,
     MODEL_DEFAULT,
     startPrompt,
     startMessage,

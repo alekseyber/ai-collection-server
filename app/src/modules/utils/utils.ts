@@ -20,7 +20,7 @@ function formattedText(text: string): FormattedText {
 
 function formatingResponseAiContent(response: OpenAIResponse | string): string {
     const content = typeof response === 'object' && response?.content ? response.content : response as string;
-    return content.replace(/<|im_(start|end)|>/g, '');
+    return content.replace(/<|im_(start|end|think)|>/g, '');
 }
 
 /**

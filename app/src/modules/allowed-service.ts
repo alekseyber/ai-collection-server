@@ -1,5 +1,5 @@
-import { config } from './config/config';
-import { AIModel } from './ai-service';
+import { AIModel, config } from './config/config';
+
 
 function getAdminPermission(userId: number): boolean {
     return config.ADMIN_USERS_TELEGRAM.includes(userId);

@@ -1,48 +1,34 @@
 import OpenAI from 'openai';
-import { config } from './config/config';
-import apiClient from './utils/api';
+import { config, ModelsGroupe } from './config/config';
 
-// Типы для моделей AI
-export interface AIModel {
-  key: string;
-  key_api?: string;
-  text: string;
-  api_url: string;
-  off: boolean;
-  superUser?: boolean;
-}
-
-export interface ModelsConfig {
-  [key: string]: AIModel;
-}
 
 export type RoleAiMessage = "function" | "developer" | "system" | "user" | "assistant" | "tool";
 // Типы для сообщений и истории
 export interface Message {
-  role: RoleAiMessage;
-  content: string;
-  name?: string;
+    role: RoleAiMessage;
+    content: string;
+    name?: string;
 }
 
 export interface FormattedText {
-  hasMarkdownV2: boolean;
-  formattedText: string;
+    hasMarkdownV2: boolean;
+    formattedText: string;
 }
 
 // Типы для ответов API
 export interface OpenAIResponse {
-  content: string;
-  [key: string]: any;
+    content: string;
+    [key: string]: any;
 }
 
 export interface OllamaResponse {
-  response: string;
-  [key: string]: any;
+    response: string;
+    [key: string]: any;
 }
 
 export interface LlamacppResponse {
-  content: string;
-  [key: string]: any;
+    content: string;
+    [key: string]: any;
 }
 
 
@@ -90,28 +76,41 @@ async function askOpenAi(messages: Message[], userId: number, modelKey = config.
  * @param model - Название модели
  * @returns - Ответ модели
  */
-
 /**
  * Отправляет запрос к Ollama API
  */
-async function askOllama(history: Message[] | string, userId: number, model: string): Promise<string> {
+async function askOllama(history: Message[], userId: number, modelKey: string): Promise<string> {
     try {
-        const prompt = Array.isArray(history) ? formatHistory(history) : history;
+        const model = config.MODELS_CONFIG[modelKey].key_api;
 
-        const response = await apiClient.post('/api/generate', {
+        const body = JSON.stringify({
             model,
-            prompt,
-            stream: false
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-                // 'Host': 'ollama-new' // Если нужно указать хост в заголовке
-            }
-        });
+            messages: formatMessagesFromOpenAi(history),
+            stream: false,
+            options: {
+                temperature: 0.7,
+                num_predict: 64
+            },
+        })
 
-        return response.data.response;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 159000);
+
+        const res = await fetch("http://ollama:11434/api/chat", {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        const data = await res.json();
+        return data.message.content;
     } catch (error) {
-        console.error('Ошибка при обращении к Ollama:', error);
+        if (error.name === 'AbortError') {
+            console.error('Request timed out');
+        } else {
+            console.error('Ошибка при обращении к Ollama:', error.messge);
+        }
         return config.ERROR_MODEL_MESSAGE;
     }
 }
@@ -134,7 +133,7 @@ async function askLlamacpp(history: Message[] | string, userId: number, model: s
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 prompt,
-                n_predict: 128,
+                n_predict: 512,
                 stream: false,
                 top_p: 0.7,
                 temperature: 0.3,
@@ -159,11 +158,25 @@ async function askLlamacpp(history: Message[] | string, userId: number, model: s
  */
 async function askModelRoutre(userId: number, message: string, history: Message[], model: string): Promise<string> {
     try {
-        if (config.OPEN_ROUTER_MODELS.includes(model)) {
-            return await askOpenAi(history, userId, model);
-        } else {
-            return await askLlamacpp(history, userId, model);
+
+        const modelsGroupe = config.MODELS_CONFIG[model].modelsGroupe;
+
+        switch (modelsGroupe) {
+            case ModelsGroupe.OPEN_ROUTER:
+                return await askOpenAi(history, userId, model);
+
+
+            case ModelsGroupe.LLAMA_CPP:
+                return await askLlamacpp(history, userId, model);
+
+
+            case ModelsGroupe.OLLAMA:
+                return await askOllama(history, userId, model);
+
+            default:
+                return config.ERROR_MODEL_MESSAGE;
         }
+
     } catch (error) {
         console.error('Ошибка при обращении', error);
         return config.ERROR_MODEL_MESSAGE;
