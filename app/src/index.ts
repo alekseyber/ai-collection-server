@@ -1,5 +1,4 @@
-// Основной файл приложения
- import { initializeBot } from './modules/bot-handlers.js';
+import { initializeBot } from './modules/bot-handlers';
 
 // Запуск бота
 initializeBot().then(() => {

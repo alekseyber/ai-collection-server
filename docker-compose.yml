@@ -83,10 +83,11 @@ services:
     container_name: nodejs
     volumes:
       # Монтируем только необходимые файлы для разработки
-      - /home/berestov/docker/nodejs/app/index.js:/usr/src/app/index.js
-      - /home/berestov/docker/nodejs/app/modules:/usr/src/app/modules
+      - /home/berestov/docker/nodejs/app/src:/usr/src/app/src
       - /home/berestov/docker/nodejs/app/package.json:/usr/src/app/package.json
       - /home/berestov/docker/nodejs/app/package-lock.json:/usr/src/app/package-lock.json
+      - /home/berestov/docker/nodejs/app/tsconfig.json:/usr/src/app/tsconfig.json
+      - /home/berestov/docker/nodejs/app/nodemon.json:/usr/src/app/nodemon.json
     ports:
       - "3501:3501"
     networks:

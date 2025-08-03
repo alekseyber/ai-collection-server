@@ -1,14 +1,13 @@
-import { utils } from "../utils/utils.js";
+import { utils } from '../utils/utils';
+import { ModelsConfig } from "../ai-service"
+
+
 // Конфигурационные константы и переменные
 
 // Значения по умолчанию
 const DEFAULT_TOKEN_TELEGRAM = process.env.DEFAULT_TOKEN_TELEGRAM;
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-const OPEN_AI_API_KEY_1 = process.env.OPEN_AI_API_KEY_1;
-
-const OPEN_AI_API_KEY_2 = process.env.OPEN_AI_API_KEY_2;
-
-const OPEN_AI_API_KEY = OPEN_AI_API_KEY_1;
+const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
 
 
 const DEFAULT_START_PROMPT = "Ты — помощник, который отвечает только на русском языке. Отвечай кратко и по существу на поставленные вопросы. Не начинай разговор сам, не уходи в рассуждения и не отвлекайся от темы." +
@@ -31,7 +30,7 @@ const DEFAULT_START_PROMPT_2 = "Ты — помощник, который отв
     "Отвечай кратко и по существу на поставленные вопросы. Не начинай разговор сам, не уходи в рассуждения и не отвлекайся от темы. " +
     "Если вопрос непонятен или выходит за рамки твоих возможностей, скажи об этом прямо."
 const DEFAULT_START_MESSAGE = 'Привет! Я бот Леша с локальной языковой моделью. Напиши мне что-нибудь!';
-const MODELS_CONFIG = {
+const MODELS_CONFIG: ModelsConfig = {
     llama2_7b: {
         key: "llama2_7b",
         text: "Llama2_7b",
@@ -99,24 +98,19 @@ const ERROR_MODEL_MESSAGE = "Извините, произошла ошибка �
 const ADMIN_USERS_TELEGRAM = utils.parseNumbers(process.env.ADMIN_USERS_TELEGRAM);
 const SUPER_USERS_TELEGRAM = utils.parseNumbers(process.env.SUPER_USERS_TELEGRAM);
 
-const setStartPrompt = (value) => { startPrompt = value; };
-const setStartMessage = (value) => { startMessage = value; };
-
-
 export const config = {
     DEFAULT_TOKEN_TELEGRAM,
-    DEFAULT_START_PROMPT,
-    DEFAULT_START_MESSAGE,
-    MODELS_CONFIG,
-    MODEL_DEFAULT,
-    ERROR_MODEL_MESSAGE,
     DEEPSEEK_API_KEY,
     OPEN_AI_API_KEY,
+    DEFAULT_START_PROMPT,
+    DEFAULT_START_PROMPT_2,
+    DEFAULT_START_MESSAGE,
+    MODELS_CONFIG,
     OPEN_ROUTER_MODELS,
-    ADMIN_USERS_TELEGRAM,
-    SUPER_USERS_TELEGRAM,
+    MODEL_DEFAULT,
     startPrompt,
     startMessage,
-    setStartPrompt,
-    setStartMessage,
+    ERROR_MODEL_MESSAGE,
+    ADMIN_USERS_TELEGRAM,
+    SUPER_USERS_TELEGRAM,
 };

@@ -1647,12 +1647,6 @@ docker exec -it nodejs node /usr/src/app/telegram-bot.js
 
 **Cursor**
 
-Эти предупреждения (warnings) не критичны для работы бота:
-
-- `har-validator@5.1.5: this library is no longer supported` — устаревшая библиотека
-- `request@2.88.2: request has been deprecated` — устаревший HTTP клиент
-- `uuid@3.4.0: Please upgrade to version 7 or higher` — старая версия UUID
-
 **Можешь игнорировать** — бот будет работать.
 
 **Если хочешь исправить:**

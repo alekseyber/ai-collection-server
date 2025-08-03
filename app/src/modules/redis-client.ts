@@ -1,5 +1,6 @@
 // Модуль для работы с Redis
 import { createClient } from 'redis';
+import { Message } from './ai-service';
 
 // Redis клиент
 const redisClient = createClient({
@@ -13,17 +14,17 @@ redisClient.connect().catch(console.error);
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
 
 // Функции для работы с конфигурацией
-async function getConfig(key, defaultValue) {
+async function getConfig(key: string, defaultValue?: string): Promise<string | null> {
     try {
-        const value = await redisClient.get(`config:${key}`);
-        return value || defaultValue;
+        const value = await redisClient.get(`config:${key}`) as string;
+        return value || defaultValue || null;
     } catch (error) {
         console.error(`Ошибка загрузки конфигурации ${key}:`, error);
-        return defaultValue;
+        return defaultValue || null;
     }
 }
 
-async function setConfig(key, value) {
+async function setConfig(key: string, value: string): Promise<void> {
     try {
         await redisClient.set(`config:${key}`, value);
         console.log(`Конфигурация ${key} обновлена`);
@@ -33,7 +34,7 @@ async function setConfig(key, value) {
 }
 
 // Функции для работы с моделью пользователя
-async function setUserModel(userId, model) {
+async function setUserModel(userId: number, model: string): Promise<void> {
     try {
         await redisClient.set(`model:${userId}`, model);
     } catch (error) {
@@ -41,9 +42,9 @@ async function setUserModel(userId, model) {
     }
 }
 
-async function getUserModel(userId) {
+async function getUserModel(userId: number): Promise<string> {
     try {
-        const model = await redisClient.get(`model:${userId}`);
+        const model = await redisClient.get(`model:${userId}`) as string;
         return model || 'llama3'; // По умолчанию llama3
     } catch (error) {
         console.error('Ошибка загрузки модели пользователя:', error);
@@ -52,7 +53,7 @@ async function getUserModel(userId) {
 }
 
 // Функции для работы с историей
-async function saveHistory(userId, history) {
+async function saveUserHistory(userId: number, history: Message[]): Promise<void> {
     try {
         await redisClient.set(`history:${userId}`, JSON.stringify(history));
     } catch (error) {
@@ -60,9 +61,9 @@ async function saveHistory(userId, history) {
     }
 }
 
-async function loadHistory(userId) {
+async function loadUserHistory(userId: number): Promise<Message[]> {
     try {
-        const history = await redisClient.get(`history:${userId}`);
+        const history = await redisClient.get(`history:${userId}`) as string;
         return history ? JSON.parse(history) : [];
     } catch (error) {
         console.error('Ошибка загрузки истории:', error);
@@ -70,7 +71,7 @@ async function loadHistory(userId) {
     }
 }
 
-async function clearHistory(userId) {
+async function clearUserHistory(userId: number): Promise<void> {
     try {
         await redisClient.del(`history:${userId}`);
     } catch (error) {
@@ -78,13 +79,22 @@ async function clearHistory(userId) {
     }
 }
 
-export const redisInstance = {
+export interface RedisClient {
+    getConfig: (key: string, def?: string) => Promise<string | null>;
+    setConfig: (key: string, value: string) => Promise<void>;
+    getUserModel: (userId: number) => Promise<string>;
+    setUserModel: (userId: number, model: string) => Promise<void>;
+    saveUserHistory: (userId: number, history: Message[]) => Promise<void>;
+    loadUserHistory: (userId: number) => Promise<Message[]>;
+    clearUserHistory: (userId: number) => Promise<void>;
+}
+
+export const redisInstance: RedisClient = {
     getConfig,
     setConfig,
     setUserModel,
     getUserModel,
-    saveHistory,
-    loadHistory,
-    clearHistory
+    saveUserHistory,
+    loadUserHistory,
+    clearUserHistory
 }
-

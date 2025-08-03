@@ -1,8 +1,8 @@
-export function getParseMode(text) {
+export function getParseMode(text: string): { ok: boolean; pos?: number } {
     const MDV2_SPECIAL_CHARS = new Set(['_', '*', '[', ']', '(', ')', '~', '', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']);
     const PAIRS = ['*', '_', '~', ''];
 
-    function isEscaped(str, pos) {
+    function isEscaped(str: string, pos: number): boolean {
         let count = 0;
         for (let i = pos - 1; i >= 0; i--) {
             if (str[i] === '\\') {
@@ -12,9 +12,9 @@ export function getParseMode(text) {
         return count % 2 === 1;
     }
 
-    function parseInline(str, start = 0, stopChars = []) {
+    function parseInline(str: string, start = 0, stopChars: string[] = []): { ok: boolean; pos?: number } {
         let i = start;
-        const stack = [];
+        const stack: string[] = [];
         while (i < str.length) {
             const ch = str[i];
 
@@ -31,7 +31,7 @@ export function getParseMode(text) {
             if (ch === '[') {
                 const textRes = parseInline(str, i + 1, [']']);
                 if (!textRes.ok) return { ok: false };
-                let nextPos = textRes.pos;
+                let nextPos = textRes.pos!;
                 if (str[nextPos] !== ']') return { ok: false };
 
                 nextPos++;
@@ -50,41 +50,29 @@ export function getParseMode(text) {
                         if (parenCount === 0) {
                             urlEnd = j;
                             break;
-                        } else parenCount--;
-                    } else if (c === ' ' || c === '\n' || c === '\t') {
-                        return { ok: false };
+                        }
+                        parenCount--;
                     }
                 }
-                if (urlEnd === -1) return { ok: false };
 
+                if (urlEnd === -1) return { ok: false };
                 i = urlEnd + 1;
                 continue;
             }
 
             if (PAIRS.includes(ch)) {
-                if (stack.length > 0 && stack[stack.length - 1].char === ch) {
+                if (stack.length > 0 && stack[stack.length - 1] === ch) {
                     stack.pop();
-                    i++;
-                    continue;
                 } else {
-                    stack.push({ char: ch, pos: i });
-                    i++;
-                    continue;
+                    stack.push(ch);
                 }
             }
 
-            if (MDV2_SPECIAL_CHARS.has(ch)) {
-                if (!isEscaped(str, i)) return { ok: false };
-            }
-
-            i++;
+            i += 1;
         }
 
-        if (stack.length > 0) return { ok: false };
-
-        return { ok: true, pos: i };
+        return { ok: stack.length === 0 };
     }
 
-    // Вызов парсера на всём тексте
     return parseInline(text);
 }

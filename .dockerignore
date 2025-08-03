@@ -34,3 +34,4 @@ redis/appendonlydir
 
 .env
 .env.nodejs
+app/dist
