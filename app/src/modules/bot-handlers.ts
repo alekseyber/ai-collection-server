@@ -1,8 +1,9 @@
 import { Telegraf, Context } from 'telegraf';
-import { config } from './config/config';
+import { loadConfig } from './config/config';
+import type { LoadConfig } from './config/config';
 import { redisInstance } from './redis-client';
-import { aiService } from './ai-service';
-import { allowedService } from './allowed-service';
+import { AIService } from './ai-service';
+import { AllowedService } from './allowed-service';
 import { utils } from './utils/utils';
 
 export let bot: Telegraf<Context>;
@@ -10,7 +11,8 @@ export let bot: Telegraf<Context>;
 /**
  * Настраивает обработчики команд и сообщений бота
  */
-function setupBotHandlers(): void {
+function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedService: AllowedService): void {
+
     // Обработчик сообщений
     bot.on('message', async (ctx, next) => {
         const chatId = ctx.chat?.id;
@@ -26,7 +28,7 @@ function setupBotHandlers(): void {
 
         console.log(`Получено сообщение от ${userId}: ${userMessageText}`);
 
-        // // Список команд, которые не должны попадать в историю
+        // Список команд, которые не должны попадать в историю
         const serviceCommands = ['/setmodel', '/getmodel', '/modelmenu', '/setprompt', '/getprompt', '/setstartmsg', '/getstartmsg', '/clear', '/start'];
         if (serviceCommands.some(cmd => userMessageText.startsWith(cmd))) {
             next();
@@ -54,7 +56,7 @@ function setupBotHandlers(): void {
 
         try {
             // Получаем ответ от модели
-            const response = await aiService.askModelRoutre(userId, userMessageText, history, model);
+            const response = await aiService.askModelRoute(userId, userMessageText, history, model);
 
             if (response !== config.ERROR_MODEL_MESSAGE) {
                 // Добавляем ответ модели в историю
@@ -212,23 +214,27 @@ function setupBotHandlers(): void {
                 }
             };
 
-            // await bot.sendMessage(chatId, 'Выберите модель:', keyboard);
-            await ctx.reply('Выберите модель:', keyboard);
-
-        } catch (error) {
-            console.error('Ошибка:', error.message);
-            await ctx.reply("Ошибка при выполнении команды");
+            try {
+                await ctx.reply('Выберите модель:', keyboard);
+            } catch (error: any) {
+                console.error('Ошибка при отправке меню моделей:', error.message);
+            }
+        } catch (error: any) {
+            console.error('Ошибка при обработке /modelmenu:', error.message);
+            try {
+                await ctx.reply("Ошибка при выполнении команды");
+            } catch (e) {
+                console.error('Не удалось отправить сообщение об ошибке:', e);
+            }
         }
-
     });
 
-    // Команда /modelmenu для выбора модели через меню
+    // Обработчик callback-запросов
     bot.on('callback_query', async (ctx) => {
         const query = ctx.callbackQuery;
         const chatId = ctx.chat?.id;
         const userId = ctx.from?.id;
 
-        // Проверяем, является ли это текстовой кнопкой
         if (!('data' in query)) {
             await ctx.answerCbQuery();
             return;
@@ -254,9 +260,22 @@ function setupBotHandlers(): void {
             await redisInstance.setUserModel(userId, selectedModel.key);
             await ctx.reply(`Модель изменена на ${selectedModel.text}`);
             await ctx.answerCbQuery();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Ошибка в callback_query:', error);
-            await ctx.answerCbQuery('Произошла ошибка', { show_alert: true });
+
+            const isExpired = error.message.includes('query is too old') ||
+                error.message.includes('response timeout expired');
+
+            if (isExpired) {
+                console.warn('Callback_query устарел, пропускаем обработку');
+                return;
+            }
+
+            try {
+                await ctx.answerCbQuery('Произошла ошибка', { show_alert: true });
+            } catch (innerError: any) {
+                console.error('Не удалось отправить сообщение об ошибке:', innerError.message);
+            }
         }
     });
 }
@@ -267,23 +286,19 @@ function setupBotHandlers(): void {
  */
 export async function initializeBot(): Promise<Telegraf<Context>> {
     try {
+        const config = await loadConfig();
         const token = await redisInstance.getConfig('telegram_token', config.DEFAULT_TOKEN_TELEGRAM) || '';
         if (!token) {
             throw new Error('Не найден токен Telegram');
         }
 
-        // Загружаем промпт и стартовое сообщение из Redis
-        const startPrompt = await redisInstance.getConfig('start_prompt', config.DEFAULT_START_PROMPT);
-        const startMessage = await redisInstance.getConfig('start_message', config.DEFAULT_START_MESSAGE);
-
-        if (startPrompt) config.startPrompt = startPrompt;
-        if (startMessage) config.startMessage = startMessage;
-
         bot = new Telegraf(token);
         console.log('Telegram бот инициализирован');
 
-        setupBotHandlers();
-        await bot.launch(); // Запускаем polling
+        const aiServiceInstance = new AIService(config);
+        const allowedService = new AllowedService(config);
+        setupBotHandlers(config, aiServiceInstance, allowedService);
+        await bot.launch();
         return bot;
     } catch (error) {
         console.error('Ошибка инициализации бота:', error);

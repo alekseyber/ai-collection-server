@@ -1,6 +1,7 @@
 // Модуль для работы с Redis
 import { createClient } from 'redis';
 import { Message } from './ai-service';
+import { Buffer } from 'buffer';
 
 // Redis клиент
 const redisClient = createClient({
@@ -30,6 +31,33 @@ async function setConfig(key: string, value: string): Promise<void> {
         console.log(`Конфигурация ${key} обновлена`);
     } catch (error) {
         console.error(`Ошибка сохранения конфигурации ${key}:`, error);
+    }
+}
+
+// Новая функция для получения переменных окружения с кешированием в Redis
+async function getEnvConfig(key: string, defaultValue?: string): Promise<string> {
+    try {
+        // Пытаемся получить значение из Redis
+        const redisValue: string | Buffer | null = await redisClient.get(`env:${key}`);
+        
+        if (redisValue !== null) {
+            // Преобразуем Buffer в строку
+            return Buffer.isBuffer(redisValue) ? redisValue.toString() : redisValue;
+        }
+        
+        // Если в Redis нет, берем из process.env
+        const envValue = process.env[key] || defaultValue;
+        
+        if (envValue) {
+            // Сохраняем в Redis для будущих использований
+            await redisClient.set(`env:${key}`, envValue);
+            return envValue;
+        }
+        
+        return defaultValue || '';
+    } catch (error) {
+        console.error(`Ошибка при работе с переменной окружения ${key}:`, error);
+        return defaultValue || '';
     }
 }
 
@@ -79,22 +107,34 @@ async function clearUserHistory(userId: number): Promise<void> {
     }
 }
 
+async function quitRedis(): Promise<void> {
+    try {
+        await redisClient.quit();
+    } catch (error) {
+        console.error('Ошибка при закрытии Redis:', error);
+    }
+}
+
 export interface RedisClient {
     getConfig: (key: string, def?: string) => Promise<string | null>;
     setConfig: (key: string, value: string) => Promise<void>;
+    getEnvConfig: (key: string, defaultValue?: string) => Promise<string>;
     getUserModel: (userId: number) => Promise<string>;
     setUserModel: (userId: number, model: string) => Promise<void>;
     saveUserHistory: (userId: number, history: Message[]) => Promise<void>;
     loadUserHistory: (userId: number) => Promise<Message[]>;
     clearUserHistory: (userId: number) => Promise<void>;
+    quit: () => Promise<void>;
 }
 
 export const redisInstance: RedisClient = {
     getConfig,
     setConfig,
+    getEnvConfig,
     setUserModel,
     getUserModel,
     saveUserHistory,
     loadUserHistory,
-    clearUserHistory
+    clearUserHistory,
+    quit: quitRedis
 }

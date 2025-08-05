@@ -25,3 +25,4 @@ redis/
 
 .env.nodejs
 app/dist
+ollama/llm

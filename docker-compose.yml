@@ -51,15 +51,15 @@ services:
       LLAMA_ARG_PORT: 12536
     restart: unless-stopped
   ollama:
-    image: ollama/ollama
-    container_name: ollama-new
-    ports:
+      image: ollama/ollama
+      container_name: ollama-new
+      ports:
       - "11434:11434"
-    volumes:
-      - /mnt/truenas/llm/.ollama:/root/.ollama
-    networks:
+      volumes:
+      - /home/berestov/docker/nodejs/ollama/llm/.ollama:/root/.ollama
+      networks:
       - proxy
-    restart: unless-stopped
+      restart: unless-stopped
   redis:
     image: redis:7-alpine
     container_name: redis

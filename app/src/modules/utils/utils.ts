@@ -1,5 +1,4 @@
 import { getParseMode } from './get-parse-mode';
-import { FormattedText, OpenAIResponse } from '../ai-service';
 
 function escapeMarkdownV2(text: string): string {
     return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
@@ -10,7 +9,10 @@ function getHasMarkdownV2Status(text: string): boolean {
     const markdownV2SpecialChars = /[_*\[\]()~`>#+\-=|{}.!]/;
     return markdownV2SpecialChars.test(text);
 }
-
+export type FormattedText = {
+    hasMarkdownV2: boolean;
+    formattedText: string;
+}
 function formattedText(text: string): FormattedText {
     return {
         hasMarkdownV2: getParseMode(text)?.ok || false,
@@ -18,7 +20,7 @@ function formattedText(text: string): FormattedText {
     }
 }
 
-function formatingResponseAiContent(response: OpenAIResponse | string): string {
+function formatingResponseAiContent(response: Record<string, string> | string): string {
     const content = typeof response === 'object' && response?.content ? response.content : response as string;
     return content.replace(/<|im_(start|end|think)|>/g, '');
 }
@@ -46,7 +48,7 @@ export interface Utils {
     escapeMarkdownV2: (text: string) => string;
     getHasMarkdownV2Status: (text: string) => boolean;
     formattedText: (text: string) => FormattedText;
-    formatingResponseAiContent: (response: OpenAIResponse | string) => string;
+    formatingResponseAiContent: (response: Record<string, string> | string) => string;
     parseNumbers: (input: string | undefined) => number[];
 }
 

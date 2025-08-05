@@ -1,55 +1,40 @@
-import { AIModel, config } from './config/config';
+import type { AIModel, LoadConfig } from './config/config';
 
+export class AllowedService {
+    private config: LoadConfig
+    constructor(
+        config: LoadConfig
+    ) {
+        this.config = config
+    }
+    public getAdminPermission(userId: number): boolean {
+        return this.config.ADMIN_USERS_TELEGRAM.includes(userId);
+    }
+    public getSuperUserPermission(userId: number): boolean {
+        return this.config.SUPER_USERS_TELEGRAM.includes(userId);
+    }
+    public getModelList(userId: number): { modelList: AIModel[], modelKeyList: string[] } {
+        const isSuperUser = this.getSuperUserPermission(userId);
+        const allModelList: AIModel[] = Object.values(this.config.MODELS_CONFIG).filter((model: unknown) => {
+            const { off, superUser } = model as AIModel;
+            if (isSuperUser) {
+                return !off;
+            }
+            return !off && !superUser;
+        });
 
-function getAdminPermission(userId: number): boolean {
-    return config.ADMIN_USERS_TELEGRAM.includes(userId);
+        return {
+            modelList: allModelList,
+            modelKeyList: allModelList.map(({ key }) => key),
+        };
+    }
+    public getModelPermissionStatus(userId: number, model: string): boolean {
+        return this.getModelList(userId).modelKeyList.includes(model);
+    }
+    public getAllowedModelsLabels(userId: number): string {
+        return this.getModelList(userId).modelList.map(({ text }) => text).join(", ");
+    }
+    public getModelPermissionSelected(userId: number, model: string): AIModel | undefined {
+        return this.getModelList(userId).modelList.find(({ key }) => key === model);
+    }
 }
-
-function getSuperUserPermission(userId: number): boolean {
-    return config.SUPER_USERS_TELEGRAM.includes(userId);
-}
-
-function getModelList(userId: number): { modelList: AIModel[], modelKeyList: string[] } {
-    const isSuperUser = getSuperUserPermission(userId);
-    const allModelList = Object.values(config.MODELS_CONFIG).filter(({ off, superUser }) => {
-        if (isSuperUser) {
-            return !off;
-        }
-        return !off && !superUser;
-    });
-
-    return {
-        modelList: allModelList,
-        modelKeyList: allModelList.map(({ key }) => key),
-    };
-}
-
-function getModelPermissionStatus(userId: number, model: string): boolean {
-    return getModelList(userId).modelKeyList.includes(model);
-}
-
-function getAllowedModelsLabels(userId: number): string {
-    return getModelList(userId).modelList.map(({ text }) => text).join(", ");
-}
-
-function getModelPermissionSelected(userId: number, model: string): AIModel | undefined {
-    return getModelList(userId).modelList.find(({ key }) => key === model);
-}
-
-export interface AllowedService {
-    getAdminPermission: (userId: number) => boolean;
-    getSuperUserPermission: (userId: number) => boolean;
-    getModelPermissionStatus: (userId: number, model: string) => boolean;
-    getAllowedModelsLabels: (userId: number) => string;
-    getModelPermissionSelected: (userId: number, model: string) => AIModel | undefined;
-    getModelList: (userId: number) => { modelList: AIModel[], modelKeyList: string[] };
-}
-
-export const allowedService: AllowedService = {
-    getAdminPermission,
-    getSuperUserPermission,
-    getModelPermissionStatus,
-    getAllowedModelsLabels,
-    getModelPermissionSelected,
-    getModelList,
-};
