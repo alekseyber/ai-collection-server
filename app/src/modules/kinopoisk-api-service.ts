@@ -67,7 +67,7 @@ export class KinopoiskService {
 
   public async getAvpMoviesReating(page?: number): Promise<any> {
     try {
-      const response = await this.apiClientKinopoisk.get(`api/v1/kp_users/39230535/votes?page=${page || 1}`);
+      const response = await this.apiClientKinopoisk.get(`api/v1/kp_users/62186102/votes?page=${page || 1}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching movies:', error);

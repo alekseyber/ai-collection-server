@@ -176,8 +176,8 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
 
         if (!chatId || !userId) return;
 
-        // Здесь можно добавить проверку на админа
-        if (!allowedService.getAdminPermission(userId)) {
+        // Здесь можно добавить проверку супер пользователя
+        if (!allowedService.getSuperUserPermission(userId)) {
             await ctx.reply('У вас нет прав на выполнение этого действия.');
             return;
         }
