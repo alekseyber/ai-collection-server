@@ -5,13 +5,15 @@ import { redisInstance } from './redis-client';
 import { AIService } from './ai-service';
 import { AllowedService } from './allowed-service';
 import { utils } from './utils/utils';
+import { KinopoiskService } from './kinopoisk-api-service';
 
 export let bot: Telegraf<Context>;
 
 /**
  * Настраивает обработчики команд и сообщений бота
  */
-function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedService: AllowedService): void {
+function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedService: AllowedService, kinopoiskService: KinopoiskService): void {
+    let isKinopiskRating = false;
 
     // Обработчик сообщений
     bot.on('message', async (ctx, next) => {
@@ -29,8 +31,47 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
         console.log(`Получено сообщение от ${userId}: ${userMessageText}`);
 
         // Список команд, которые не должны попадать в историю
-        const serviceCommands = ['/setmodel', '/getmodel', '/modelmenu', '/setprompt', '/getprompt', '/setstartmsg', '/getstartmsg', '/clear', '/start'];
+        const serviceCommands = [
+            '/setmodel',
+            '/getmodel',
+            '/modelmenu',
+            '/setprompt',
+            '/getprompt',
+            '/setstartmsg',
+            '/getstartmsg',
+            '/clear',
+            '/start',
+            '/getavpkinorating'];
         if (serviceCommands.some(cmd => userMessageText.startsWith(cmd))) {
+            next();
+            return;
+        }
+
+        if (isKinopiskRating && isNaN(Number(userMessageText))) {
+            await ctx.reply('Введите номер страницы');
+            next();
+            return;
+        }
+
+        if (isKinopiskRating) {
+            await ctx.sendChatAction('typing');
+            const page = Number(userMessageText);
+            const response = await kinopoiskService.getAvpMoviesReating(page);
+
+            // Отправляем ответ пользователю
+            const { info, csvContent } = utils.formatingKinopiskRating(response, page)
+            await ctx.reply(info);
+
+            if (csvContent) {
+                // Отправляем как файл
+                await ctx.replyWithDocument(
+                    { source: Buffer.from(csvContent, 'utf8'), filename: `ratings_page_${page}.csv` },
+                    {
+                        caption: '📊 Рейтинг фильмов AVP (CSV)',
+                    }
+                );
+            }
+
             next();
             return;
         }
@@ -88,6 +129,7 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
         try {
             // Очищаем историю при старте
             await redisInstance.clearUserHistory(userId);
+            isKinopiskRating = false;
 
             await ctx.reply(config.startMessage);
         } catch (error) {
@@ -125,6 +167,22 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
         // Обновляем промпт в конфигурации
         config.startPrompt = newPrompt;
         await ctx.reply('Системный промпт обновлен!');
+    });
+
+    // Команда /getavpkinorating просмотр рейтинга фильмов AVP
+    bot.hears(/\/getavpkinorating/, async (ctx, next) => {
+        const chatId = ctx.chat?.id;
+        const userId = ctx.from?.id;
+
+        if (!chatId || !userId) return;
+
+        // Здесь можно добавить проверку на админа
+        if (!allowedService.getAdminPermission(userId)) {
+            await ctx.reply('У вас нет прав на выполнение этого действия.');
+            return;
+        }
+        isKinopiskRating = true;
+        await ctx.reply("Введите номер страницы");
     });
 
     // Команда /getprompt для просмотра текущего промпта
@@ -297,7 +355,9 @@ export async function initializeBot(): Promise<Telegraf<Context>> {
 
         const aiServiceInstance = new AIService(config);
         const allowedService = new AllowedService(config);
-        setupBotHandlers(config, aiServiceInstance, allowedService);
+        const kinopoiskService = new KinopoiskService(config);
+        setupBotHandlers(config, aiServiceInstance, allowedService, kinopoiskService);
+
         await bot.launch();
         return bot;
     } catch (error) {

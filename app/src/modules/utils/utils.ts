@@ -1,3 +1,4 @@
+import { Tracing } from 'trace_events';
 import { getParseMode } from './get-parse-mode';
 
 function escapeMarkdownV2(text: string): string {
@@ -44,12 +45,45 @@ function parseNumbers(input: string | undefined): number[] {
         .filter((num): num is number => num !== null); // Удаляем null значения
 }
 
+function formatingKinopiskRating(response: any, page: number): { info: string; csvContent: string } {
+    if (!response?.totalPages && !response?.items) return { info: 'Ответ не получен', csvContent: "" };
+
+    const items = response?.items || [];
+
+    const info = `Текущая страница ${page} из ${response?.totalPages}, следующее сообщение CSV с данными`;
+    // Заголовки CSV
+    const headers = "nameRu;nameOriginal;year;type;userRating;ratingKinopoisk;ratingImbd";
+
+    // Формируем строки данных
+    const rows = items.map((item: any) => {
+        const nameRu = item?.nameRu ? `"${item.nameRu.replace(/"/g, '""')}"` : '';
+        const nameOriginal = item?.nameOriginal ? `"${item.nameOriginal.replace(/"/g, '""')}"` : '';
+        const year = item?.year ?? '';
+        const type = item?.type ?? '';
+        const userRating = item?.userRating ?? '';
+        const ratingKinopoisk = item?.ratingKinopoisk ?? '';
+        const ratingImbd = item?.ratingImbd ?? '';
+        return `${nameRu};${nameOriginal};${year};${type};${userRating};${ratingKinopoisk};${ratingImbd}`;
+    });
+
+    // Добавляем первую строку с информацией о странице как комментарий (необязательно)
+    // Или убираем её из тела CSV, чтобы не нарушать структуру
+    const csvContent = [
+        headers,
+        ...rows
+    ].join('\n');
+
+    return { info, csvContent };
+
+}
+
 export interface Utils {
     escapeMarkdownV2: (text: string) => string;
     getHasMarkdownV2Status: (text: string) => boolean;
     formattedText: (text: string) => FormattedText;
     formatingResponseAiContent: (response: Record<string, string> | string) => string;
     parseNumbers: (input: string | undefined) => number[];
+    formatingKinopiskRating: (response: any, page: number) => { info: string; csvContent: string };
 }
 
 export const utils: Utils = {
@@ -58,4 +92,5 @@ export const utils: Utils = {
     formattedText,
     formatingResponseAiContent,
     parseNumbers,
+    formatingKinopiskRating,
 }

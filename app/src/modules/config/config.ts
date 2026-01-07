@@ -126,6 +126,7 @@ export const loadConfig = async () => {
     const DEFAULT_TOKEN_TELEGRAM = await redisInstance.getEnvConfig('DEFAULT_TOKEN_TELEGRAM');
     const DEEPSEEK_API_KEY = await redisInstance.getEnvConfig('DEEPSEEK_API_KEY');
     const OPEN_AI_API_KEY = await redisInstance.getEnvConfig('OPEN_AI_API_KEY');
+    const KINOPOISK_API_KEY = await redisInstance.getEnvConfig('KINOPOISK_API_KEY');
 
     const DEFAULT_START_PROMPT = "Ты — помощник, который отвечает только на русском языке. Отвечай кратко и по существу на поставленные вопросы. Не начинай разговор сам, не уходи в рассуждения и не отвлекайся от темы." +
         "Если вопрос непонятен или выходит за рамки твоих возможностей, скажи об этом прямо." +
@@ -161,6 +162,7 @@ export const loadConfig = async () => {
         ERROR_MODEL_MESSAGE,
         ADMIN_USERS_TELEGRAM,
         SUPER_USERS_TELEGRAM,
+        KINOPOISK_API_KEY,
     };
 };
 
