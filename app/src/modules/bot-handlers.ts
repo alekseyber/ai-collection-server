@@ -56,20 +56,38 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
         if (isKinopiskRating) {
             await ctx.sendChatAction('typing');
             const page = Number(userMessageText);
-            const response = await kinopoiskService.getAvpMoviesReating(page);
+            try {
+                if (page < 1000) {
+                    const response = await kinopoiskService.getAvpMoviesReating(page);
 
-            // Отправляем ответ пользователю
-            const { info, csvContent } = utils.formatingKinopiskRating(response, page)
-            await ctx.reply(info);
+                    // Отправляем ответ пользователю
+                    const { info, csvContent } = utils.formatingKinopiskRating(response, page)
+                    await ctx.reply(info);
 
-            if (csvContent) {
-                // Отправляем как файл
-                await ctx.replyWithDocument(
-                    { source: Buffer.from(csvContent, 'utf8'), filename: `ratings_page_${page}.csv` },
-                    {
-                        caption: '📊 Рейтинг фильмов AVP (CSV)',
+                    if (csvContent) {
+                        // Отправляем как файл
+                        await ctx.replyWithDocument(
+                            { source: Buffer.from(csvContent, 'utf8'), filename: `ratings_page_${page}.csv` },
+                            {
+                                caption: '📊 Рейтинг фильмов AVP (CSV)',
+                            }
+                        );
                     }
-                );
+                } else {
+                    await ctx.reply("Ожидайте, запросы отправляются");
+                    const items = await kinopoiskService.getAvpMoviesReatinAllPages();
+                    const itemsCsv = utils.getCsvKinopiskRating(items);
+                    // Отправляем как файл
+                    await ctx.replyWithDocument(
+                        { source: Buffer.from(itemsCsv, 'utf8'), filename: "ratings_page_all.csv" },
+                        {
+                            caption: '📊 Рейтинг фильмов AVP (CSV)',
+                        }
+                    );
+                }
+
+            } catch (error: any) {
+                ctx.reply(`Error fetching movies: ${JSON.stringify(error)}`);
             }
 
             next();

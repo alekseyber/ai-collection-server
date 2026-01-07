@@ -5,6 +5,8 @@ import { LoadConfig } from 'modules/config/config';
 // Опционально: экспортируйте типы и утилиты
 export type { AxiosResponse };
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 
 export class KinopoiskService {
   private config: LoadConfig;
@@ -73,6 +75,36 @@ export class KinopoiskService {
       console.error('Error fetching movies:', error);
       return `Error fetching movies: ${JSON.stringify(error)}`
       //throw error;
+    }
+  }
+
+  public async getAvpMoviesReatinAllPages(): Promise<any> {
+    try {
+      const startData = await this.getAvpMoviesReating(1);
+      const totalPages = startData?.totalPages || 0;
+      if (totalPages === 0) {
+        throw new Error("Страницы не найдены");
+      }
+      let items = startData?.items || [];
+
+      for (let i = 2; i <= totalPages; i++) {
+        await delay(400);
+        try {
+          const response = await this.getAvpMoviesReating(i);
+    
+          if (response?.items) {
+            items = [...items, ...response?.items];
+          }
+        } catch (error) {
+          console.error(`Error fetching movies page ${i}:`, error);
+        }
+      }
+      return items;
+
+    } catch (error) {
+      console.error('Error fetching movies:', error);
+      //   return `Error fetching movies: ${JSON.stringify(error)}`
+      throw error;
     }
   }
 

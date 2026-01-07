@@ -45,12 +45,10 @@ function parseNumbers(input: string | undefined): number[] {
         .filter((num): num is number => num !== null); // Удаляем null значения
 }
 
-function formatingKinopiskRating(response: any, page: number): { info: string; csvContent: string } {
-    if (!response?.totalPages && !response?.items) return { info: 'Ответ не получен', csvContent: "" };
+function getCsvKinopiskRating(itemsProps: any[]): string {
+    const items = itemsProps || [];
 
-    const items = response?.items || [];
 
-    const info = `Текущая страница ${page} из ${response?.totalPages}, следующее сообщение CSV с данными`;
     // Заголовки CSV
     const headers = "nameRu;nameOriginal;year;type;userRating;ratingKinopoisk;ratingImbd";
 
@@ -73,8 +71,20 @@ function formatingKinopiskRating(response: any, page: number): { info: string; c
         ...rows
     ].join('\n');
 
-    return { info, csvContent };
+    return csvContent;
 
+}
+
+function formatingKinopiskRating(response: any, page: number): { info: string; csvContent: string } {
+    if (!response?.totalPages && !response?.items) return { info: 'Ответ не получен', csvContent: "" };
+
+    const items = response?.items || [];
+
+    const info = `Текущая страница ${page} из ${response?.totalPages}, следующее сообщение CSV с данными`;
+
+    const csvContent = getCsvKinopiskRating(items)
+
+    return { info, csvContent };
 }
 
 export interface Utils {
@@ -84,6 +94,7 @@ export interface Utils {
     formatingResponseAiContent: (response: Record<string, string> | string) => string;
     parseNumbers: (input: string | undefined) => number[];
     formatingKinopiskRating: (response: any, page: number) => { info: string; csvContent: string };
+    getCsvKinopiskRating: (itemsProps: any[]) => string;
 }
 
 export const utils: Utils = {
@@ -93,4 +104,5 @@ export const utils: Utils = {
     formatingResponseAiContent,
     parseNumbers,
     formatingKinopiskRating,
+    getCsvKinopiskRating,
 }
