@@ -10,7 +10,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "paths": {
-      "modules/*": ["modules/*"]
+      "@services/*": ["./services/*"]
     }
   },
   "include": ["src/**/*.ts"]

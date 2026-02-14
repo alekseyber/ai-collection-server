@@ -6,14 +6,24 @@ import { AIService } from './ai-service';
 import { AllowedService } from './allowed-service';
 import { utils } from './utils/utils';
 import { KinopoiskService } from './kinopoisk-api-service';
+import { EmbeddingService } from './embedding-service';
+import { ErrorApp } from './errors/error-app.class';
+import { ErrorTelegram } from './errors/error-telegram.class';
+import { convert } from 'telegram-markdown-v2';
 
 export let bot: Telegraf<Context>;
 
 /**
  * Настраивает обработчики команд и сообщений бота
  */
-function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedService: AllowedService, kinopoiskService: KinopoiskService): void {
-    let isKinopiskRating = false;
+function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedService: AllowedService, kinopoiskService: KinopoiskService, embeddingService: EmbeddingService): void {
+    const isKinopiskRating: Record<string, boolean> = {};
+    const isEmbeddingsMode: Record<string, boolean> = {};
+
+    const clearModesCurrentUser = (userId: number) => {
+        isKinopiskRating[String(userId)] = false;
+        isEmbeddingsMode[String(userId)] = false;
+    };
 
     // Обработчик сообщений
     bot.on('message', async (ctx, next) => {
@@ -32,28 +42,45 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
 
         // Список команд, которые не должны попадать в историю
         const serviceCommands = [
-            '/setmodel',
-            '/getmodel',
-            '/modelmenu',
-            '/setprompt',
-            '/getprompt',
-            '/setstartmsg',
-            '/getstartmsg',
-            '/clear',
-            '/start',
-            '/getavpkinorating'];
+            '/setmodel', // Выбрать модель
+            '/getmodel', // Получить текущую модель
+            '/modelmenu', // Меню моделей
+            '/setprompt', // Задать стартовый промпт
+            '/getprompt', // Получить тестовый промт
+            '/setstartmsg', // Задать привественное сообщение
+            '/getstartmsg', // Получить привественное сообщение
+            '/clear', // Очистить историю
+            '/start', // Начать диалог
+            '/getavpkinorating', // Получить рейтинг фильмов AVP
+            '/on_embeddings', // Включить режим embeddings
+        ];
         if (serviceCommands.some(cmd => userMessageText.startsWith(cmd))) {
             next();
             return;
         }
 
-        if (isKinopiskRating && isNaN(Number(userMessageText))) {
+        if (isEmbeddingsMode[String(userId)] && !userMessageText) {
+            await ctx.reply('Введите текст, вы в режиме embeddings');
+            next();
+            return;
+        }
+
+        if (isEmbeddingsMode[String(userId)]) {
+            await ctx.reply("Ожидайте, запрос отправлен");
+            await embeddingService.addEmbeddingSource(userMessageText); // searchSimilar addEmbeddingSource
+
+            await ctx.reply('Ответ модели получен, введите следующий текст');
+            next();
+            return;
+        }
+
+        if (isKinopiskRating[String(userId)] && isNaN(Number(userMessageText))) {
             await ctx.reply('Введите номер страницы');
             next();
             return;
         }
 
-        if (isKinopiskRating) {
+        if (isKinopiskRating[String(userId)]) {
             await ctx.sendChatAction('typing');
             const page = Number(userMessageText);
             try {
@@ -87,7 +114,7 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
                 }
 
             } catch (error: any) {
-                ctx.reply(`Error fetching movies: ${JSON.stringify(error)}`);
+                new ErrorTelegram('Error fetching movies KinopiskRating', error, ctx);
             }
 
             next();
@@ -113,27 +140,38 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
         // Отправляем "печатает..." статус
         await ctx.sendChatAction('typing');
 
+        let responseModel: string
+
         try {
             // Получаем ответ от модели
-            const response = await aiService.askModelRoute(userId, userMessageText, history, model);
+            responseModel = await aiService.askModelRoute(userId, userMessageText, history, model);
 
-            if (response !== config.ERROR_MODEL_MESSAGE) {
+            if (responseModel !== config.ERROR_MODEL_MESSAGE) {
                 // Добавляем ответ модели в историю
-                history.push({ role: 'assistant', content: utils.formatingResponseAiContent(response) });
+                history.push({ role: 'assistant', content: utils.formatingResponseAiContent(responseModel) });
 
                 // Сохраняем обновленную историю
                 await redisInstance.saveUserHistory(userId, history);
             }
 
             // Отправляем ответ пользователю
-            await ctx.reply(response, {
-                parse_mode: 'Markdown',
+            await ctx.reply(responseModel, {
+                parse_mode: 'MarkdownV2',
                 link_preview_options: { is_disabled: false }
             });
 
         } catch (error: any) {
-            console.error('Ошибка:', error.message);
-            await ctx.reply('Произошла ошибка при обработке сообщения.');
+            const err = new ErrorTelegram('Произошла ошибка при обработке ответа сообщения', error, ctx);
+            if (err.errorCode == "400" && responseModel) {
+                try {
+                    await ctx.reply(convert(responseModel, "remove"), {
+                        parse_mode: 'MarkdownV2',
+                        link_preview_options: { is_disabled: false }
+                    });
+                } catch (e: any) {
+                    new ErrorTelegram('Произошла повторная ошибка после convert при обработке ответа сообщения', e, ctx);
+                }
+            }
         }
     });
 
@@ -147,12 +185,11 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
         try {
             // Очищаем историю при старте
             await redisInstance.clearUserHistory(userId);
-            isKinopiskRating = false;
+            clearModesCurrentUser(userId);
 
             await ctx.reply(config.startMessage);
         } catch (error) {
-            console.error('Ошибка:', error);
-            await ctx.reply('Произошла ошибка при обработке команды.');
+            new ErrorTelegram('Произошла ошибка при обработке команды /start', error, ctx);
         }
     });
 
@@ -199,8 +236,26 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
             await ctx.reply('У вас нет прав на выполнение этого действия.');
             return;
         }
-        isKinopiskRating = true;
+        clearModesCurrentUser(userId);
+        isKinopiskRating[String(userId)] = true;
         await ctx.reply("Введите номер страницы");
+    });
+
+    // Команда /on_embeddings просмотр рейтинга фильмов AVP
+    bot.hears(/\/on_embeddings/, async (ctx, next) => {
+        const chatId = ctx.chat?.id;
+        const userId = ctx.from?.id;
+
+        if (!chatId || !userId) return;
+
+        // Здесь можно добавить проверку супер пользователя
+        if (!allowedService.getSuperUserPermission(userId)) {
+            await ctx.reply('У вас нет прав на выполнение этого действия.');
+            return;
+        }
+        clearModesCurrentUser(userId);
+        isEmbeddingsMode[String(userId)] = true;
+        await ctx.reply("Вы в режиеме embeddings");
     });
 
     // Команда /getprompt для просмотра текущего промпта
@@ -229,8 +284,7 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
             config.startMessage = newMsg;
             await ctx.reply('Стартовое сообщение обновлено!');
         } catch (error) {
-            console.error('Ошибка:', error);
-            await ctx.reply('Произошла ошибка при обработке команды.');
+            new ErrorTelegram('Произошла ошибка при обработке команды /setstartmsg', error, ctx);
         }
     });
 
@@ -293,15 +347,10 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
             try {
                 await ctx.reply('Выберите модель:', keyboard);
             } catch (error: any) {
-                console.error('Ошибка при отправке меню моделей:', error.message);
+                new ErrorTelegram('Ошибка при отправке меню моделей', error);
             }
         } catch (error: any) {
-            console.error('Ошибка при обработке /modelmenu:', error.message);
-            try {
-                await ctx.reply("Ошибка при выполнении команды");
-            } catch (e) {
-                console.error('Не удалось отправить сообщение об ошибке:', e);
-            }
+            new ErrorTelegram('Ошибка при обработке /modelmenu:', error, ctx);
         }
     });
 
@@ -337,20 +386,19 @@ function setupBotHandlers(config: LoadConfig, aiService: AIService, allowedServi
             await ctx.reply(`Модель изменена на ${selectedModel.text}`);
             await ctx.answerCbQuery();
         } catch (error: any) {
-            console.error('Ошибка в callback_query:', error);
-
             const isExpired = error.message.includes('query is too old') ||
                 error.message.includes('response timeout expired');
 
             if (isExpired) {
-                console.warn('Callback_query устарел, пропускаем обработку');
+                new ErrorTelegram('allback_query устарел, пропускаем обработку', error);
                 return;
             }
+            new ErrorTelegram('Ошибка в callback_query', error);
 
             try {
                 await ctx.answerCbQuery('Произошла ошибка', { show_alert: true });
             } catch (innerError: any) {
-                console.error('Не удалось отправить сообщение об ошибке:', innerError.message);
+                new ErrorTelegram('Не удалось отправить answerCbQuery сообщение об ошибке', innerError);
             }
         }
     });
@@ -365,7 +413,7 @@ export async function initializeBot(): Promise<Telegraf<Context>> {
         const config = await loadConfig();
         const token = await redisInstance.getConfig('telegram_token', config.DEFAULT_TOKEN_TELEGRAM) || '';
         if (!token) {
-            throw new Error('Не найден токен Telegram');
+            throw new ErrorApp('Не найден токен Telegram');
         }
 
         bot = new Telegraf(token);
@@ -374,12 +422,12 @@ export async function initializeBot(): Promise<Telegraf<Context>> {
         const aiServiceInstance = new AIService(config);
         const allowedService = new AllowedService(config);
         const kinopoiskService = new KinopoiskService(config);
-        setupBotHandlers(config, aiServiceInstance, allowedService, kinopoiskService);
+        const embeddingService = new EmbeddingService(config, aiServiceInstance)
+        setupBotHandlers(config, aiServiceInstance, allowedService, kinopoiskService, embeddingService);
 
         await bot.launch();
         return bot;
     } catch (error) {
-        console.error('Ошибка инициализации бота:', error);
-        throw error;
+        new ErrorTelegram('Ошибка инициализации бота:', error);
     }
 }

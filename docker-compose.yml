@@ -71,6 +71,20 @@ services:
       - proxy
     restart: unless-stopped
     command: redis-server --appendonly yes
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: pgvector-db
+    environment:
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: pgpass
+      POSTGRES_DB: pgdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - /home/berestov/docker/nodejs/pgvector_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - proxy  
   nodejs:
     build:
       context: ./app
@@ -93,7 +107,6 @@ services:
     networks:
       - proxy
     restart: unless-stopped
-
 
 networks:
   proxy:

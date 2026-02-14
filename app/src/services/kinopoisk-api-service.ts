@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
-import { LoadConfig } from 'modules/config/config';
+import { LoadConfig } from 'services/config/config';
 
 
 // Опционально: экспортируйте типы и утилиты
@@ -91,7 +91,7 @@ export class KinopoiskService {
         await delay(400);
         try {
           const response = await this.getAvpMoviesReating(i);
-    
+
           if (response?.items) {
             items = [...items, ...response?.items];
           }
@@ -107,5 +107,4 @@ export class KinopoiskService {
       throw error;
     }
   }
-
 }

@@ -1,4 +1,3 @@
-import { Tracing } from 'trace_events';
 import { getParseMode } from './get-parse-mode';
 
 function escapeMarkdownV2(text: string): string {

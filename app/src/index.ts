@@ -1,5 +1,5 @@
-import { initializeBot } from './modules/bot-handlers';
-import { redisInstance } from './modules/redis-client';
+import { initializeBot } from './services/bot-handlers';
+import { redisInstance } from './services/redis-client';
 
 // Обработка сигналов завершения
 process.once('SIGINT', () => gracefulShutdown('SIGINT'));

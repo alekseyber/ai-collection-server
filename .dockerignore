@@ -31,6 +31,8 @@ app/.DS_Store
 redis/
 redis/data
 redis/appendonlydir
+pgvector_data/
+ollama/
 
 .env
 .env.nodejs
