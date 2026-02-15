@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
-import { LoadConfig } from 'services/config/config';
+import { LoadConfig } from './config/config';
 
 
 // Опционально: экспортируйте типы и утилиты

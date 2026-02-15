@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { AiProvider, Message } from '../ai-provider.interface';
-import { LoadConfig } from 'services/config/config';
+import { LoadConfig } from '../../config/config';
 import { ChatCompletionMessageParam } from 'openai/resources/index';
 
 

@@ -1,4 +1,4 @@
-import { ModelsGroupe } from "services/config/models-groupe.enum";
+import { ModelsGroupe } from "../config/models-groupe.enum";
 
 export type RoleAiMessage = "function" | "developer" | "system" | "user" | "assistant" | "tool";
 

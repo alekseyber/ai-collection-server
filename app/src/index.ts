@@ -1,4 +1,5 @@
-import { ErrorTelegram } from 'services/errors/error-telegram.class';
+
+import { ErrorTelegram } from './services/errors/error-telegram.class';
 import { initializeBot } from './services/bot-service';
 import { redisInstance } from './services/redis-client';
 

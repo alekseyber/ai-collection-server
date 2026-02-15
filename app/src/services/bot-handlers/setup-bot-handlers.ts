@@ -3,7 +3,6 @@ import { LoadConfig } from '../config/config';
 import { AIService } from '../ai-service/ai-service';
 import { AllowedService } from '../allowed-service';
 import { KinopoiskService } from '../kinopoisk-api-service';
-//import { EmbeddingService } from '../ai-service/embedding-service';
 import { handleMessage } from './message-handler';
 import { handleStartCommand } from './command-start';
 import { handleClearCommand } from './command-clear';

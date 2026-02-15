@@ -1,6 +1,4 @@
-// services/ai-service/providers/timeweb.provider.ts
-
-import { LoadConfig } from 'services/config/config';
+import { LoadConfig } from '../../config/config';
 import { AiProvider, Message } from '../ai-provider.interface';
 import { LlmDeepseekAgent } from '../llm-deepseek-agent';
 import { EmbeddingService } from '../embedding-service';

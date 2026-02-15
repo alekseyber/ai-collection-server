@@ -1,6 +1,6 @@
-import { LoadConfig } from "services/config/config";
+import { LoadConfig } from "../../config/config";
 import { AiProvider, Message } from "../ai-provider.interface";
-import { EmbeddingService } from "../embedding-service";
+
 
 
 export class LlamaCppProvider implements AiProvider {

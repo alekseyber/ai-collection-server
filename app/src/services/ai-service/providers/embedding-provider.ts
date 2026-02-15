@@ -1,4 +1,4 @@
-import { LoadConfig } from "services/config/config";
+import { LoadConfig } from "../../config/config";
 import { AiEmbeddingProvider } from "../ai-provider.interface";
 
 
