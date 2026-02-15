@@ -1,14 +1,7 @@
 import { utils } from '../utils/utils';
 import { redisInstance } from '../redis-client';
+import { ModelsGroupe } from './models-groupe.enum';
 
-// Типы для моделей AI
-export enum ModelsGroupe {
-    OLLAMA = "ollama",
-    LLAMA_CPP = "llama_cpp",
-    OPEN_ROUTER = "open_router",
-    OTHER = "other",
-    TIMEWEB_CLOUD_AI = "timeweb_cloud_ai",
-}
 
 export type AIModel = {
     key: string;
@@ -194,6 +187,7 @@ export const loadConfig = async () => {
    - внимательно проанализируй результаты,
    - опирайся на них в ответе,
    - по возможности указывай, какие факты взяты из найденных материалов.
+   - форматируй ответы строго по правилам Telegram MarkdownV2 как указано выше
 
     3. Если knowledge_search не дал полезной информации:
    - честно скажи, что в доступных источниках нет точных данных,

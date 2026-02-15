@@ -1,6 +1,7 @@
-import { AIService } from "./ai-service";
-import { LoadConfig } from "./config/config";
-import { PgClientService, RowSimilar } from "./pg-client-service";
+
+import { PgClientService, RowSimilar } from "../pg-client-service";
+import { EmbeddingProvider } from "./providers/embedding-provider";
+
 
 /**
  * Разбивает текст на чанки фиксированного размера с overlap.
@@ -52,20 +53,17 @@ function splitToChunks(
 
 
 export class EmbeddingService {
-    private config: LoadConfig;
-    private aiServiceInstance: AIService;
+    private aiServiceInstance: EmbeddingProvider;
     private pgClientService: PgClientService;
     constructor(
-        config: LoadConfig,
-        aiServiceInstance: AIService,
+        embeddingProvider: EmbeddingProvider,
     ) {
-        this.config = config;
-        this.aiServiceInstance = aiServiceInstance;
+        this.aiServiceInstance = embeddingProvider;
         this.pgClientService = new PgClientService();
     }
 
     private async getEmbedding(content: string[]): Promise<number[][]> {
-        const embedding = await this.aiServiceInstance.askOllamaEmbeddings(content);
+        const embedding = await this.aiServiceInstance.ask(content);
         return embedding;
     }
     public async answerWithRag(question: string): Promise<string> {
@@ -79,7 +77,7 @@ export class EmbeddingService {
                         `Источник ${idx + 1} (similarity: ${r.similarity.toFixed(3)}, source: ${r.source}):\n${r.content}`,
                 )
                 .join('\n\n---\n\n');
-            
+
             return context
         } catch (error) {
             console.error("Ошибка при поиске векторизации:", error);

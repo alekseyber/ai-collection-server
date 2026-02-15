@@ -9,9 +9,7 @@
     "skipLibCheck": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "paths": {
-      "@services/*": ["./services/*"]
-    }
+    "paths": {}
   },
   "include": ["src/**/*.ts"]
 }

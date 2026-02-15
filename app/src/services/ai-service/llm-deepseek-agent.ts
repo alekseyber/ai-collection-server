@@ -1,8 +1,8 @@
-import { Message } from "./ai-service";
-import { LoadConfig } from "./config/config";
+import { LoadConfig } from "../config/config";
+import { ErrorApp } from "../errors/error-app.class";
+import { ErrorTimewebAgent } from "../errors/error-tmeweb-agent.class";
+import { Message } from "./ai-provider.interface";
 import { EmbeddingService } from "./embedding-service";
-import { ErrorApp } from "./errors/error-app.class";
-import { ErrorTimewebAgent } from "./errors/error-tmeweb-agent.class";
 
 type Choice = {
     index: number;
@@ -65,6 +65,7 @@ const tools = [
 export class LlmDeepseekAgent {
     private config: LoadConfig;
     private embeddingService: EmbeddingService;
+
     constructor(config: LoadConfig, embeddingService: EmbeddingService) {
         this.config = config;
         this.embeddingService = embeddingService;
@@ -140,7 +141,7 @@ export class LlmDeepseekAgent {
 
             if (toolCallsItemParams.name === "knowledge_search" && argumentsData?.query && reasoning_content) {
                 const searchResultText = await this.embeddingService.answerWithRag(argumentsData?.query);
-
+               
                 const newMessages = [...messages, { role: 'assistant', content: reasoning_content }, {
                     role: 'user',
                     content: `

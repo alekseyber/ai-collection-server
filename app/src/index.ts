@@ -1,4 +1,5 @@
-import { initializeBot } from './services/bot-handlers';
+import { ErrorTelegram } from 'services/errors/error-telegram.class';
+import { initializeBot } from './services/bot-service';
 import { redisInstance } from './services/redis-client';
 
 // Обработка сигналов завершения
@@ -23,7 +24,7 @@ async function gracefulShutdown(signal: string) {
         await initializeBot();
         console.log('Telegram бот запущен...');
     } catch (error) {
-        console.error('Критическая ошибка при запуске бота:', error);
+        new ErrorTelegram('Критическая ошибка при запуске бота:', error);
         await redisInstance.quit();
         process.exit(1);
     }

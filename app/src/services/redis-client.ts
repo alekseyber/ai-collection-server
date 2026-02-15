@@ -1,7 +1,7 @@
 // Модуль для работы с Redis
 import { createClient } from 'redis';
-import { Message } from './ai-service';
 import { Buffer } from 'buffer';
+import { Message } from './ai-service/ai-provider.interface';
 
 // Redis клиент
 const redisClient = createClient({
