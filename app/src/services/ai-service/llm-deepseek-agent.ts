@@ -123,7 +123,7 @@ export class LlmDeepseekAgent {
         }
     }
 
-    public async askTimewebCloudAi(messages: Message[], model: string, offTools?: boolean): Promise<string> {
+    public async askTimewebCloudAi(messages: Message[], model: string, offTools: boolean = true): Promise<string> {
         try {
             const data1: ResponseData = await this.callTimewebCloudAi(messages, model, offTools);
             const choice = data1.choices?.[0];

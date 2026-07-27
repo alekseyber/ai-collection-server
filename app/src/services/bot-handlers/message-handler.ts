@@ -88,7 +88,7 @@ export function handleMessage(bot: Telegraf<Context>, ctxData: BotHandlersContex
             }
 
             await ctx.reply(responseModel, {
-                parse_mode: 'MarkdownV2',
+                parse_mode: 'Markdown',
                 link_preview_options: { is_disabled: false }
             });
         } catch (error: any) {

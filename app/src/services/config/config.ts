@@ -133,7 +133,7 @@ const MODELS_CONFIG: ModelsConfig = {
         key: "deepseek_v_3_2_timeweb",
         key_api: "deepseek_v_3_2_timeweb",
         text: "DeepSeek V3.2 new",
-        api_url: "https://agent.timeweb.cloud/api/v1/cloud-ai/agents/def6774f-0712-4008-bb99-33c197dde684/v1/chat/completions",
+        api_url: "https://agent.timeweb.cloud/api/v1/cloud-ai/agents/084d0325-563b-4d4c-a9e2-631216a73f00/v1/chat/completions",
         modelsGroupe: ModelsGroupe.TIMEWEB_CLOUD_AI,
         superUser: true,
     },
