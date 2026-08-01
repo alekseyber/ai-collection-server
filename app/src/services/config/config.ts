@@ -55,7 +55,7 @@ const MODELS_CONFIG: ModelsConfig = {
         key: "qwen_ai",
         text: 'Qwen best local',
         api_url: "http://qwen-ai-research:12536/completion",
-        off: false,
+        off: true,
         modelsGroupe: ModelsGroupe.LLAMA_CPP,
     },
     deepseek_chat: {
@@ -120,6 +120,24 @@ const MODELS_CONFIG: ModelsConfig = {
         superUser: true,
         off: true,
     },
+    silicone_embeddings: {
+        key: "embeddings_out_silicon",
+        key_api: "Qwen/Qwen3-Embedding-0.6B",
+        text: "qwen-embed-text",
+        api_url: "https://api.siliconflow.com/v1/",
+        modelsGroupe: ModelsGroupe.SILICON_CLOUD_AI,
+        superUser: true,
+        off: true,
+    },
+    silicon_deepseek_v_4_flash: {
+        key: "silicon_deepseek_v_4_flash",
+        key_api: "deepseek-ai/DeepSeek-V4-Flash silicon",
+        text: "DeepSeek V4-Flash silicon",
+        api_url: "https://api.siliconflow.com/v1/chat/completions",
+        modelsGroupe: ModelsGroupe.SILICON_CLOUD_AI,
+        superUser: true,
+        off: true,
+    },
     preparation_ollama: {
         key: "preparation_ollama",
         key_api: "qwen2.5:3b",
@@ -130,9 +148,9 @@ const MODELS_CONFIG: ModelsConfig = {
         off: true,
     },
     deepseek_v_3_2_timeweb: {
-        key: "deepseek_v_3_2_timeweb",
+        key: "deepseek_v_4_flash_timeweb",
         key_api: "deepseek_v_3_2_timeweb",
-        text: "DeepSeek V3.2 new",
+        text: "DeepSeek V4-Flash timeweb",
         api_url: "https://agent.timeweb.cloud/api/v1/cloud-ai/agents/084d0325-563b-4d4c-a9e2-631216a73f00/v1/chat/completions",
         modelsGroupe: ModelsGroupe.TIMEWEB_CLOUD_AI,
         superUser: true,
@@ -149,6 +167,7 @@ export const loadConfig = async () => {
     const OPEN_AI_API_KEY = await redisInstance.getEnvConfig('OPEN_AI_API_KEY');
     const KINOPOISK_API_KEY = await redisInstance.getEnvConfig('KINOPOISK_API_KEY');
     const TIMEWEB_AI_API_KEY = await redisInstance.getEnvConfig('TIMEWEB_AI_API_KEY');
+    const SILICON_FLOW_AI_API_KEY = await redisInstance.getEnvConfig('SILICON_FLOW_AI_API_KEY');
 
     const DEFAULT_START_PROMPT = `
     Ты — помощник, который отвечает только на русском языке. 
@@ -249,6 +268,7 @@ Hello \_World\_!
         SUPER_USERS_TELEGRAM,
         KINOPOISK_API_KEY,
         TIMEWEB_AI_API_KEY,
+        SILICON_FLOW_AI_API_KEY,
     };
 };
 

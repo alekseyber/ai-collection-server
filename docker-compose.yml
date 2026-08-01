@@ -1,5 +1,7 @@
 services:
   llamacpp-server:
+    profiles:
+    - disabled
     image: ghcr.io/ggml-org/llama.cpp:server # https://github.com/ggml-org/llama.cpp/tree/master/tools/server
     container_name: llamacpp-ggml-model
     ports:
@@ -17,6 +19,8 @@ services:
       LLAMA_ARG_PORT: 12534
     restart: unless-stopped
   llamacpp-server2:
+    profiles:
+    - disabled
     image: ghcr.io/ggml-org/llama.cpp:server
     container_name: llamacpp-llama-2-7b-model
     ports:
@@ -34,6 +38,8 @@ services:
       LLAMA_ARG_PORT: 12535
     restart: unless-stopped
   llamacpp-server3:
+    profiles:
+    - disabled
     image: ghcr.io/ggml-org/llama.cpp:server
     container_name: qwen-ai-research
     ports:
@@ -51,6 +57,8 @@ services:
       LLAMA_ARG_PORT: 12536
     restart: unless-stopped
   ollama:
+      profiles: 
+      - disabled
       image: ollama/ollama
       container_name: ollama-new
       ports:

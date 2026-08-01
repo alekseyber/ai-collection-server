@@ -6,6 +6,7 @@ import { OllamaProvider } from './ollama.provider';
 import { TimewebProvider } from './timeweb.provider';
 import { LlamaCppProvider } from './llamacpp.provider';
 import { EmbeddingService } from '../embedding-service';
+import { SiliconProvider } from './silicon.provider';
 
 
 export class ConcreteAiProviderFactory implements AiProviderFactory {
@@ -21,6 +22,7 @@ export class ConcreteAiProviderFactory implements AiProviderFactory {
             [ModelsGroupe.OLLAMA, OllamaProvider],
             [ModelsGroupe.LLAMA_CPP, LlamaCppProvider],
             [ModelsGroupe.TIMEWEB_CLOUD_AI, TimewebProvider],
+            [ModelsGroupe.SILICON_CLOUD_AI, SiliconProvider],
         ]);
     }
 

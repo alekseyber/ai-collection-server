@@ -5,4 +5,5 @@ export enum ModelsGroupe {
     OPEN_ROUTER = "open_router",
     OTHER = "other",
     TIMEWEB_CLOUD_AI = "timeweb_cloud_ai",
+    SILICON_CLOUD_AI = "silicon_cloud_ai",
 }
