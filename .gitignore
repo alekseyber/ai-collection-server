@@ -21,8 +21,9 @@ app/.DS_STORE
 app/node_modules
 
 redis/
+redis_backup/
 pgvector_data/
-
+pgvector_data_backup/
 
 .env.nodejs
 app/dist
