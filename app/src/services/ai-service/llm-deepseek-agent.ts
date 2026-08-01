@@ -82,6 +82,7 @@ export class LlmDeepseekAgent {
             return message;
         });
         const api_url = this.config.MODELS_CONFIG?.[model]?.api_url || this.config.MODEL_DEFAULT.api_url;
+
         const params = {
             method: "POST",
             headers: {
@@ -105,7 +106,9 @@ export class LlmDeepseekAgent {
     private async callTimewebCloudAi(messages: Message[], model: string, offTools?: boolean): Promise<ResponseData> {
         try {
             const { params, api_url } = this.getParams(messages, model, offTools);
+           
             const res = await fetch(api_url, params);
+
             const text = await res.text();
             if (!res.ok) {
                 throw new ErrorTimewebAgent("Timeweb agent HTTP error", text, res);
@@ -113,9 +116,11 @@ export class LlmDeepseekAgent {
 
             const data: ResponseData = JSON.parse(text);
             const finish_reason = data?.choices?.[0]?.finish_reason;
+   
             if (!finish_reason) {
                 throw new ErrorApp("Timeweb agent HTTP error: отсуствует значение finish_reason");
             }
+
             return data;
         }
         catch (error) {
@@ -167,6 +172,7 @@ export class LlmDeepseekAgent {
 
     public async preparationTimewebCloudAi(contentOut: string, promt: string) {
         try {
+
             const content = `
                                 ${promt}
                                 ${contentOut}
@@ -175,7 +181,7 @@ export class LlmDeepseekAgent {
                 role: "assistant",
                 content,
 
-            }], "deepseek_v_3_2_timeweb", true)
+            }], "deepseek_v_4_flash_timeweb", true)
         }
         catch (error) {
             throw error;

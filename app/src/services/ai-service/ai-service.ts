@@ -23,11 +23,13 @@ export class AIService {
     ): Promise<string> {
         try {
             const modelConfig = this.config.MODELS_CONFIG[model];
+            
             if (!modelConfig) {
-                return this.config.ERROR_MODEL_MESSAGE;
+                return this.config.ERROR_MODEL_MESSAGE + " -askModelRoute";
             }
 
             const provider = this.providerFactory.createProvider(modelConfig.modelsGroupe);
+   
             if (!provider) {
                 return this.config.ERROR_MODEL_MESSAGE;
             }

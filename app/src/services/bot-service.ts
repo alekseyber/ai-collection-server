@@ -33,6 +33,8 @@ export async function initializeBot(): Promise<Telegraf<Context>> {
         await bot.launch();
         return bot;
     } catch (error) {
+        console.log({error})
+        
         new ErrorTelegram('Ошибка инициализации бота', error);
         throw error;
     }

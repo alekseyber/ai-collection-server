@@ -131,12 +131,12 @@ const MODELS_CONFIG: ModelsConfig = {
     },
     silicon_deepseek_v_4_flash: {
         key: "silicon_deepseek_v_4_flash",
-        key_api: "deepseek-ai/DeepSeek-V4-Flash silicon",
+        key_api: "deepseek-ai/DeepSeek-V4-Flash",
         text: "DeepSeek V4-Flash silicon",
         api_url: "https://api.siliconflow.com/v1/chat/completions",
         modelsGroupe: ModelsGroupe.SILICON_CLOUD_AI,
         superUser: true,
-        off: true,
+        off: false,
     },
     preparation_ollama: {
         key: "preparation_ollama",
@@ -147,9 +147,9 @@ const MODELS_CONFIG: ModelsConfig = {
         superUser: true,
         off: true,
     },
-    deepseek_v_3_2_timeweb: {
+    deepseek_v_4_flash_timeweb: {
         key: "deepseek_v_4_flash_timeweb",
-        key_api: "deepseek_v_3_2_timeweb",
+        key_api: "deepseek_v_4_flash_timeweb",
         text: "DeepSeek V4-Flash timeweb",
         api_url: "https://agent.timeweb.cloud/api/v1/cloud-ai/agents/084d0325-563b-4d4c-a9e2-631216a73f00/v1/chat/completions",
         modelsGroupe: ModelsGroupe.TIMEWEB_CLOUD_AI,
@@ -157,7 +157,7 @@ const MODELS_CONFIG: ModelsConfig = {
     },
 };
 
-const MODEL_DEFAULT = MODELS_CONFIG.qwen_ai;
+const MODEL_DEFAULT = MODELS_CONFIG.silicon_deepseek_v_4_flash;
 
 // Асинхронная загрузка конфигурации
 export const loadConfig = async () => {

@@ -17,6 +17,7 @@ export class SiliconProvider implements AiProvider {
     async ask(messages: Message[], userId: number, modelKey: string): Promise<string> {
         try {
             const model = this.config.MODELS_CONFIG[modelKey]?.key_api || this.config.MODELS_CONFIG.glm_4_5_air.key_api;
+           
             if (!model) throw new Error("Модель не найдена");
 
             const response = await this.client.chat.completions.create({

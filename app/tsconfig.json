@@ -13,5 +13,6 @@
       "services/*": ["./src/services/*"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "ignoreDeprecations": "6.0"
 }

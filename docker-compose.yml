@@ -1,80 +1,80 @@
 services:
-  llamacpp-server:
-    profiles:
-    - disabled
-    image: ghcr.io/ggml-org/llama.cpp:server # https://github.com/ggml-org/llama.cpp/tree/master/tools/server
-    container_name: llamacpp-ggml-model
-    ports:
-      - 12534:12534
-    volumes:
-      - /mnt/truenas/llm/.bin/models:/models
-    networks:
-      - proxy
-    environment:
+# llamacpp-server:
+#    profiles:
+#    - disabled
+#   image: ghcr.io/ggml-org/llama.cpp:server # https://github.com/ggml-org/llama.cpp/tree/master/tools/server
+ #   container_name: llamacpp-ggml-model
+ #   ports:
+#      - 12534:12534
+ #   volumes:
+ #     - /mnt/truenas/llm/.bin/models:/models
+ #   networks:
+  #    - proxy
+  #  environment:
       # alternatively, you can use "LLAMA_ARG_MODEL_URL" to download the model
-      LLAMA_ARG_MODEL: /models/ggml-model-q4_0.gguf
-      LLAMA_ARG_CTX_SIZE: ${LLAMA_ARG_CTX_SIZE}
-      LLAMA_ARG_N_PARALLEL: ${LLAMA_ARG_N_PARALLEL}
-      LLAMA_ARG_ENDPOINT_METRICS: ${LLAMA_ARG_ENDPOINT_METRICS}
-      LLAMA_ARG_PORT: 12534
-    restart: unless-stopped
-  llamacpp-server2:
-    profiles:
-    - disabled
-    image: ghcr.io/ggml-org/llama.cpp:server
-    container_name: llamacpp-llama-2-7b-model
-    ports:
-      - 12535:12535
-    volumes:
-      - /mnt/truenas/llm/.bin/models:/models
-    networks:
-      - proxy
-    environment:
+  #    LLAMA_ARG_MODEL: /models/ggml-model-q4_0.gguf
+  #    LLAMA_ARG_CTX_SIZE: ${LLAMA_ARG_CTX_SIZE}
+  #    LLAMA_ARG_N_PARALLEL: ${LLAMA_ARG_N_PARALLEL}
+  #    LLAMA_ARG_ENDPOINT_METRICS: ${LLAMA_ARG_ENDPOINT_METRICS}
+  #    LLAMA_ARG_PORT: 12534
+  #  restart: unless-stopped
+ # llamacpp-server2:
+ #   profiles:
+ #   - disabled
+  #  image: ghcr.io/ggml-org/llama.cpp:server
+ #   container_name: llamacpp-llama-2-7b-model
+  #  ports:
+ #     - 12535:12535
+ #   volumes:
+  #    - /mnt/truenas/llm/.bin/models:/models
+  #  networks:
+ #     - proxy
+  #  environment:
       # alternatively, you can use "LLAMA_ARG_MODEL_URL" to download the model
-      LLAMA_ARG_MODEL: /models/llama-2-7b-chat.Q4_K_M.gguf
-      LLAMA_ARG_CTX_SIZE: ${LLAMA_ARG_CTX_SIZE}
-      LLAMA_ARG_N_PARALLEL: ${LLAMA_ARG_N_PARALLEL}
-      LLAMA_ARG_ENDPOINT_METRICS: ${LLAMA_ARG_ENDPOINT_METRICS}
-      LLAMA_ARG_PORT: 12535
-    restart: unless-stopped
-  llamacpp-server3:
-    profiles:
-    - disabled
-    image: ghcr.io/ggml-org/llama.cpp:server
-    container_name: qwen-ai-research
-    ports:
-      - 12536:12536
-    volumes:
-      - /mnt/truenas/llm/.bin/models:/models
-    networks:
-      - proxy
-    environment:
+  #    LLAMA_ARG_MODEL: /models/llama-2-7b-chat.Q4_K_M.gguf
+  #    LLAMA_ARG_CTX_SIZE: ${LLAMA_ARG_CTX_SIZE}
+  #    LLAMA_ARG_N_PARALLEL: ${LLAMA_ARG_N_PARALLEL}
+  #    LLAMA_ARG_ENDPOINT_METRICS: ${LLAMA_ARG_ENDPOINT_METRICS}
+  #    LLAMA_ARG_PORT: 12535
+  #  restart: unless-stopped
+  #llamacpp-server3:
+  #  profiles:
+  #  - disabled
+  #  image: ghcr.io/ggml-org/llama.cpp:server
+  #  container_name: qwen-ai-research
+  #  ports:
+  #    - 12536:12536
+  #  volumes:
+  #    - /mnt/truenas/llm/.bin/models:/models
+  #  networks:
+  #    - proxy
+  #  environment:
       # alternatively, you can use "LLAMA_ARG_MODEL_URL" to download the model
-      LLAMA_ARG_MODEL: /models/qwen-ai-research-qa-q4_k_m.gguf
-      LLAMA_ARG_CTX_SIZE: ${LLAMA_ARG_CTX_SIZE}
-      LLAMA_ARG_N_PARALLEL: ${LLAMA_ARG_N_PARALLEL}
-      LLAMA_ARG_ENDPOINT_METRICS: ${LLAMA_ARG_ENDPOINT_METRICS}
-      LLAMA_ARG_PORT: 12536
-    restart: unless-stopped
-  ollama:
-      profiles: 
-      - disabled
-      image: ollama/ollama
-      container_name: ollama-new
-      ports:
-      - "11434:11434"
-      volumes:
-      - /home/berestov/docker/nodejs/ollama/llm/.ollama:/root/.ollama
-      networks:
-      - proxy
-      restart: unless-stopped
+   #   LLAMA_ARG_MODEL: /models/qwen-ai-research-qa-q4_k_m.gguf
+   #   LLAMA_ARG_CTX_SIZE: ${LLAMA_ARG_CTX_SIZE}
+   #   LLAMA_ARG_N_PARALLEL: ${LLAMA_ARG_N_PARALLEL}
+   #   LLAMA_ARG_ENDPOINT_METRICS: ${LLAMA_ARG_ENDPOINT_METRICS}
+   #   LLAMA_ARG_PORT: 12536
+  #  restart: unless-stopped
+  #ollama:
+   #   profiles: 
+   #   - disabled
+  #    image: ollama/ollama
+  #    container_name: ollama-new
+  #    ports:
+  #    - "11434:11434"
+  #    volumes:
+  #    - /home/berestov/docker/nodejs/ollama/llm/.ollama:/root/.ollama
+   #   networks:
+  #    - proxy
+  #    restart: unless-stopped
   redis:
     image: redis:7-alpine
     container_name: redis
     ports:
       - "6379:6379"
     volumes:
-      - /home/berestov/docker/nodejs/redis/data:/data
+      - /home/berestov/projects/ai-collection-server/redis/data:/data
     networks:
       - proxy
     restart: unless-stopped
@@ -89,7 +89,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - /home/berestov/docker/nodejs/pgvector_data:/var/lib/postgresql/data
+      - /home/berestov/projects/ai-collection-server/pgvector_data:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - proxy  
@@ -105,11 +105,11 @@ services:
     container_name: nodejs
     volumes:
       # Монтируем только необходимые файлы для разработки
-      - /home/berestov/docker/nodejs/app/src:/usr/src/app/src
-      - /home/berestov/docker/nodejs/app/package.json:/usr/src/app/package.json
-      - /home/berestov/docker/nodejs/app/package-lock.json:/usr/src/app/package-lock.json
-      - /home/berestov/docker/nodejs/app/tsconfig.json:/usr/src/app/tsconfig.json
-      - /home/berestov/docker/nodejs/app/nodemon.json:/usr/src/app/nodemon.json
+      - /home/berestov/projects/ai-collection-server/app/src:/usr/src/app/src
+      - /home/berestov/projects/ai-collection-server/app/package.json:/usr/src/app/package.json
+      - /home/berestov/projects/ai-collection-server/app/package-lock.json:/usr/src/app/package-lock.json
+      - /home/berestov/projects/ai-collection-server/app/tsconfig.json:/usr/src/app/tsconfig.json
+      - /home/berestov/projects/ai-collection-server/app/nodemon.json:/usr/src/app/nodemon.json
     ports:
       - "3501:3501"
     networks:
