@@ -94,13 +94,13 @@ services:
     networks:
       - proxy  
   nodejs:
+    user: "1000:1000"
     build:
       context: ./app
       dockerfile: Dockerfile
     depends_on:
       - redis
     env_file:
-     - ./.env.nodejs.dev
      - ./.env.nodejs
     container_name: nodejs
     volumes:
@@ -110,6 +110,7 @@ services:
       - /home/berestov/projects/ai-collection-server/app/package-lock.json:/usr/src/app/package-lock.json
       - /home/berestov/projects/ai-collection-server/app/tsconfig.json:/usr/src/app/tsconfig.json
       - /home/berestov/projects/ai-collection-server/app/nodemon.json:/usr/src/app/nodemon.json
+      - /home/berestov/projects/ai-collection-server/.env.nodejs:/usr/src/app/.env.nodejs
     ports:
       - "3501:3501"
     networks:
