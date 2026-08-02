@@ -28,4 +28,5 @@ pgvector_data_backup/
 .env.nodejs
 app/dist
 ollama/llm
-app/src/services/errors/logs/*
+app/src/services/errors/logs/*.env.dev
+.env.nodejs.dev
