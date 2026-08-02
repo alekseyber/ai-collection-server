@@ -1,53 +1,114 @@
-# Локальные LLM-модели: Коллекция, Настройка и Диалог через Телеграмм
+# AI Collection Server
 
-Проект для коллекционирования, настройки и взаимодействия с локальными моделями искусственного интеллекта (LLM) через Telegram-бота. Поддерживает модели на основе `llama.cpp`, `Ollama` и другие, позволяет изучать параметры конфигурации и подключать разные архитектуры.
+Мульти-провайдерный AI-агент с Telegram-ботом. Поддерживает streaming, JSON mode, ReAct agent loop и RAG (pgvector).
 
----
+## Архитектура
 
-## 📦 Основные Функции
+```
+User → Telegram → message-handler.ts
+    → AIService
+        → ReActAgent.runStream()
+            → providerFactory.createProvider()
+                → provider.askStream()   — стриминг токенов
+                → provider.askJson()    — JSON mode (structured output)
+    → ReAct Loop: thought → action (tool call) → ... → final → ответ в Telegram
+```
 
-1. **Коллекция моделей**  
-   - Хранение и запуск различных LLM (например, `ggml-model-q4_0.gguf`, `llama-2-7b-chat.Q4_K_M.gguf`, `qwen-ai-research-qa-q4_k_m.gguf`).
-   - Поддержка GPU/настроек контекста (`ctx_size`, `n_parallel`).
+## Провайдеры
 
-2. **Настройка параметров**  
-   - Изучайте влияние гиперпараметров на вывод моделей (порт, размер контекста, параллелизм).
-   - Динамическое управление через переменные окружения.
+| Провайдер | Модели | Статус | API |
+|-----------|--------|--------|-----|
+| **SiliconFlow** | DeepSeek V4 Flash/Pro, Qwen 3.5, Qwen VL | 🟢 active | `api.siliconflow.com/v1` |
+| **OpenRouter** | GPT-4o, Claude, другие | 🟢 active | `openrouter.ai/api/v1` |
+| **Timeweb** | DeepSeek V4 Flash (AI Agent) | 🟢 active | `agent.timeweb.cloud/api/v1` |
+| **Ollama** | Локальные модели | 🔴 off (ждёт GPU) | `ollama:11434/v1` |
+| **LlamaCpp** | GGUF-модели | 🔴 off (ждёт GPU) | прямой fetch |
 
-3. **Интеграция с Telegram**  
-   - Взаимодействие с пользователями через бота (запросы, ответы, управление сессиями).
-   - Поддержка нескольких моделей в одном интерфейсе.
+## Streaming
 
-4. **Оркестрация через Docker**  
-   - Автоматическая сборка и запуск сервисов с помощью `docker compose`.
-   - Готовые образы для `llama.cpp`, `Ollama`, `Redis`.
+Все провайдеры поддерживают `askStream()` — ответ передаётся чанками. В Telegram: первое сообщение → `editMessageText` с обновлением каждые N чанков.
 
----
+```typescript
+for await (const step of agent.runStream(history, userMessage, modelKey)) {
+    if (step.type === 'chunk') {
+        fullContent += step.content;
+        // редактируем сообщение в Telegram
+    }
+    if (step.type === 'final') {
+        await ctx.reply(step.answer, { parse_mode: 'Markdown' });
+    }
+}
+```
 
-## 🛠️ Предварительные Условия
+## JSON mode
 
-- **Docker** и **Docker Compose** (версии >= 20.10).
-- Папка с моделями (`.gguf`) в пути `/mnt/truenas/llm/.bin/models`.
-- Файлы `.env.dev` и `.env` (для настройки переменных окружения).
+Все провайдеры реализуют `askJson<T>()` — ответ гарантированно валидный JSON по схеме.
 
----
+```typescript
+const step = await provider.askJson<ReActStep>(messages, userId, modelKey);
+// step.type: 'thought' | 'action' | 'final'
+```
 
-## 🚀 Как Начать
+## ReAct Agent Loop
 
-1. **Клонируйте репозиторий**:
-   ```bash
-   git clone https://github.com/ваше-имя/проект.git
-   cd проект
-Создайте файлы окружения:
+Цикл: **thought → action (tool execute) → observation → thought → ... → final**
 
-bash
-cp .env.example .env
-# Редактируйте .env для вашей конфигурации
-Запустите сервисы:
+- `knowledge_search` — RAG-поиск по базе знаний (pgvector)
+- Tool registry расширяемый — добавление новых инструментов одной строкой
+- Лимит итераций — 10 (предохранитель от бесконечного цикла)
 
-bash
+## Начало работы
+
+### Переменные окружения (.env)
+
+```
+SILICON_FLOW_AI_API_KEY=sk-...
+OPEN_AI_API_KEY=sk-...          # OpenRouter
+TIMEWEB_AI_API_KEY=...          # Timeweb AI Agent
+DEFAULT_TOKEN_TELEGRAM=...      # Telegram Bot Token
+KINOPOISK_API_KEY=...           # опционально
+```
+
+### Запуск
+
+```bash
 docker compose up -d
-⚠️ Если используете .env.dev, укажите его явно:
+```
 
-bash
-docker compose --env-file .env.dev up -d
+Контейнер `nodejs` слушает Telegram-бота. Изменения в `app/src/` подхватываются автоматически (bind mount + nodemon).
+
+## Структура проекта
+
+```
+app/src/
+├── services/
+│   ├── ai-service/              # AI core
+│   │   ├── ai-provider.interface.ts
+│   │   ├── ai-service.ts        # AIService entry point
+│   │   ├── embedding-service.ts # RAG (pgvector)
+│   │   ├── agents/
+│   │   │   └── react-agent.ts   # ReAct Agent (runStream, askJson)
+│   │   └── providers/
+│   │       ├── ai-provider.factory.ts
+│   │       ├── silicon.provider.ts
+│   │       ├── openrouter.provider.ts
+│   │       ├── timeweb.provider.ts
+│   │       ├── ollama.provider.ts
+│   │       └── llamacpp.provider.ts
+│   ├── bot-handlers/            # Telegram bot handlers
+│   │   ├── message-handler.ts   # streaming handler
+│   │   └── ...
+│   ├── config/
+│   │   └── config.ts            # PROVIDER_BASE_URLS, модели
+│   └── ...
+├── index.ts
+└── tsconfig.json
+```
+
+## Дорожная карта
+
+- ✅ **Phase 1.1** — Streaming, JSON mode, ReAct agent loop
+- 🟡 **Phase 1.2** — RAG-пайплайн (pgvector — уже есть, улучшить)
+- 🔄 **Phase 1.3** — Tool registry (web_search, calculator, file_ops)
+- ⏳ **Phase 2** — GPU-инференс (vLLM, после RTX 3090)
+- ⏳ **Phase 3** — Fine-tuning, AI-продукт
