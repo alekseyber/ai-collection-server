@@ -4,6 +4,7 @@ import { EmbeddingService } from './embedding-service';
 import { ConcreteAiProviderFactory } from './providers/ai-provider.factory';
 import { EmbeddingProvider } from './providers/embedding-provider';
 import { ReActAgent } from './agents/react-agent';
+import { ToolRegistry } from './tools/tool-registry';
 
 export class AIService {
   private config: LoadConfig;
@@ -11,11 +12,16 @@ export class AIService {
   private providerFactory: AiProviderFactory;
   reactAgent: ReActAgent;  // public — доступен из handlers
 
-  constructor(config: LoadConfig) {
+  constructor(config: LoadConfig, toolRegistry?: ToolRegistry) {
     this.config = config;
     this.embeddingService = new EmbeddingService(new EmbeddingProvider(config));
     this.providerFactory = new ConcreteAiProviderFactory(config, this.embeddingService);
-    this.reactAgent = new ReActAgent(config, this.embeddingService, this.providerFactory);
+    this.reactAgent = new ReActAgent(
+      config,
+      this.embeddingService,
+      this.providerFactory,
+      toolRegistry,
+    );
   }
 
   public async askModelRoute(

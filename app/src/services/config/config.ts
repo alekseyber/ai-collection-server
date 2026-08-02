@@ -10,6 +10,7 @@ export type AIModel = {
   off?: boolean;
   superUser?: boolean;
   modelsGroupe: ModelsGroupe;
+  toolsDisabled?: boolean;
 };
 
 export type ModelsConfig = {
@@ -153,6 +154,7 @@ const MODELS_CONFIG: ModelsConfig = {
     api_url:
       'https://agent.timeweb.cloud/api/v1/cloud-ai/agents/084d0325-563b-4d4c-a9e2-631216a73f00/v1/chat/completions',
     modelsGroupe: ModelsGroupe.TIMEWEB_CLOUD_AI,
+    toolsDisabled: true,
     superUser: true,
   },
 };

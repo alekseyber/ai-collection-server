@@ -1,6 +1,6 @@
 # AI Collection Server
 
-Мульти-провайдерный AI-агент с Telegram-ботом. Поддерживает streaming, JSON mode, ReAct agent loop и RAG (pgvector).
+Мульти-провайдерный AI-агент с Telegram-ботом. Поддерживает streaming, JSON mode, ReAct agent loop, RAG (pgvector) и Tool System.
 
 ## Архитектура
 
@@ -8,11 +8,20 @@
 User → Telegram → message-handler.ts
     → AIService
         → ReActAgent.runStream()
+            → ToolRegistry (5 tools)
+            → Safety layer (isPathAllowed, isSafeCommand)
             → providerFactory.createProvider()
-                → provider.askStream()   — стриминг токенов
-                → provider.askJson()    — JSON mode (structured output)
-    → ReAct Loop: thought → action (tool call) → ... → final → ответ в Telegram
+                → provider.askJson()    — ReAct шаги (JSON mode)
+                → provider.askStream()  — финальный ответ (streaming)
+    → ReAct Loop: askJson → thought|action → tool execute → ... → final → streaming chunks
 ```
+
+### Режимы работы
+
+| Режим | Провайдеры | Описание |
+|-------|-----------|---------|
+| **Tool mode** | SiliconFlow, OpenRouter, Ollama | ReActAgent → askJson → extractFirstJson → tool execute → streaming final |
+| **Chat mode** | Timeweb (toolsDisabled: true) | askStream напрямую, без ReAct, без тулов |
 
 ## Провайдеры
 
@@ -20,13 +29,34 @@ User → Telegram → message-handler.ts
 |-----------|--------|--------|-----|
 | **SiliconFlow** | DeepSeek V4 Flash/Pro, Qwen 3.5, Qwen VL | 🟢 active | `api.siliconflow.com/v1` |
 | **OpenRouter** | GPT-4o, Claude, другие | 🟢 active | `openrouter.ai/api/v1` |
-| **Timeweb** | DeepSeek V4 Flash (AI Agent) | 🟢 active | `agent.timeweb.cloud/api/v1` |
+| **Timeweb** | DeepSeek V4 Flash (AI Agent), toolsDisabled | 🟢 active | `agent.timeweb.cloud/api/v1` |
 | **Ollama** | Локальные модели | 🔴 off (ждёт GPU) | `ollama:11434/v1` |
 | **LlamaCpp** | GGUF-модели | 🔴 off (ждёт GPU) | прямой fetch |
 
+## Tool System
+
+5 системных инструментов для ReActAgent:
+
+| Инструмент | Описание |
+|-----------|---------|
+| `read_file` | Чтение файла с offset/limit |
+| `write_file` | Создание/перезапись файла (только в sandbox: /tmp/, scripts/, tools/, plugins/) |
+| `patch` | Find-and-replace (безопаснее write_file) |
+| `search_files` | Рекурсивный grep по файлам |
+| `terminal` | Shell-команды (exec, безопасные: без rm -rf, sudo, chmod 777) |
+
+**Safety layer:**
+- `isPathAllowed` — запись только в sandbox-директории
+- `isSafeCommand` — блокировка опасных команд/паттернов
+- `PROTECTED_DIRS` — providers/, agents/, config/, index.ts (нельзя менять)
+- Safety prompt в REACT_SYSTEM_PROMPT (6 правил, игнор user override)
+- `write_file` запрашивает подтверждение если файл существует
+
+**Config:** `toolsDisabled: true` для Timeweb — модель работает без инструментов (простой стриминг).
+
 ## Streaming
 
-Все провайдеры поддерживают `askStream()` — ответ передаётся чанками. В Telegram: первое сообщение → `editMessageText` с обновлением каждые N чанков.
+Ответ финального шага разбивается на 10 чанков для плавного вывода в Telegram.
 
 ```typescript
 for await (const step of agent.runStream(history, userMessage, modelKey)) {
@@ -42,7 +72,7 @@ for await (const step of agent.runStream(history, userMessage, modelKey)) {
 
 ## JSON mode
 
-Все провайдеры реализуют `askJson<T>()` — ответ гарантированно валидный JSON по схеме.
+Все провайдеры реализуют `askJson<T>()` — ответ гарантированно валидный JSON. Используется `extractFirstJson` с подсчётом скобок (без `response_format` на стороне API).
 
 ```typescript
 const step = await provider.askJson<ReActStep>(messages, userId, modelKey);
@@ -51,10 +81,11 @@ const step = await provider.askJson<ReActStep>(messages, userId, modelKey);
 
 ## ReAct Agent Loop
 
-Цикл: **thought → action (tool execute) → observation → thought → ... → final**
+Цикл: **askJson → thought/action → tool execute → askJson → ... → final → streaming**
 
-- `knowledge_search` — RAG-поиск по базе знаний (pgvector)
-- Tool registry расширяемый — добавление новых инструментов одной строкой
+- Первый вызов `askJson` определяет: диалог (final) или инструмент (action)
+- Если action → execute tool → continue askJson loop
+- Если final → разбить на чанки → стриминг
 - Лимит итераций — 10 (предохранитель от бесконечного цикла)
 
 ## Начало работы
@@ -87,19 +118,28 @@ app/src/
 │   │   ├── ai-service.ts        # AIService entry point
 │   │   ├── embedding-service.ts # RAG (pgvector)
 │   │   ├── agents/
-│   │   │   └── react-agent.ts   # ReAct Agent (runStream, askJson)
+│   │   │   └── react-agent.ts   # ReAct Agent (askJson, toolsDisabled support)
+│   │   ├── tools/               # Tool System
+│   │   │   ├── tool.interface.ts
+│   │   │   ├── tool-registry.ts
+│   │   │   ├── safety.ts        # isPathAllowed, isSafeCommand
+│   │   │   ├── read-file.tool.ts
+│   │   │   ├── write-file.tool.ts
+│   │   │   ├── patch-file.tool.ts
+│   │   │   ├── search-files.tool.ts
+│   │   │   └── terminal.tool.ts
 │   │   └── providers/
 │   │       ├── ai-provider.factory.ts
-│   │       ├── silicon.provider.ts
-│   │       ├── openrouter.provider.ts
-│   │       ├── timeweb.provider.ts
-│   │       ├── ollama.provider.ts
+│   │       ├── silicon.provider.ts  (extractFirstJson, AbortController)
+│   │       ├── openrouter.provider.ts (extractFirstJson)
+│   │       ├── timeweb.provider.ts   (toolsDisabled, extractFirstJson)
+│   │       ├── ollama.provider.ts    (extractFirstJson)
 │   │       └── llamacpp.provider.ts
 │   ├── bot-handlers/            # Telegram bot handlers
 │   │   ├── message-handler.ts   # streaming handler
 │   │   └── ...
 │   ├── config/
-│   │   └── config.ts            # PROVIDER_BASE_URLS, модели
+│   │   └── config.ts            # PROVIDER_BASE_URLS, модели, toolsDisabled
 │   └── ...
 ├── index.ts
 └── tsconfig.json
@@ -108,7 +148,8 @@ app/src/
 ## Дорожная карта
 
 - ✅ **Phase 1.1** — Streaming, JSON mode, ReAct agent loop
+- ✅ **Phase 1.3** — Tool System (read_file, write_file, patch, search_files, terminal)
 - 🟡 **Phase 1.2** — RAG-пайплайн (pgvector — уже есть, улучшить)
-- 🔄 **Phase 1.3** — Tool registry (web_search, calculator, file_ops)
+- ⏳ **Phase 0.5** — Observability (OpenTelemetry + Jaeger)
 - ⏳ **Phase 2** — GPU-инференс (vLLM, после RTX 3090)
 - ⏳ **Phase 3** — Fine-tuning, AI-продукт

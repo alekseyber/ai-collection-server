@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "baseUrl": "./src",
-    "ignoreDeprecations": "6.0",
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "node",
@@ -14,5 +13,5 @@
       "services/*": ["./src/services/*"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts"]
 }

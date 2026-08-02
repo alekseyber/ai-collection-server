@@ -49,3 +49,15 @@
 2026-08-02T13:53:24.239Z | ErrorTelegram | Критическая ошибка при запуске бота: | Ошибка Telegram: code: 409, description: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running, parameters: , payloadText: 
 2026-08-02T14:01:15.997Z | ErrorTelegram | Ошибка инициализации бота | Ошибка Telegram: code: 409, description: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running, parameters: , payloadText: 
 2026-08-02T14:01:15.998Z | ErrorTelegram | Критическая ошибка при запуске бота: | Ошибка Telegram: code: 409, description: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running, parameters: , payloadText: 
+2026-08-02T16:39:41.173Z | ErrorTelegram | Ошибка инициализации бота | Ошибка Telegram: code: 409, description: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running, parameters: , payloadText: 
+2026-08-02T16:39:41.174Z | ErrorTelegram | Критическая ошибка при запуске бота: | Ошибка Telegram: code: 409, description: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running, parameters: , payloadText: 
+2026-08-02T17:18:26.049Z | ErrorTelegram | Ошибка инициализации бота | Системная ошибка: Promise timed out after 90000 milliseconds
+2026-08-02T17:18:26.049Z | ErrorTelegram | Критическая ошибка при запуске бота: | Системная ошибка: Promise timed out after 90000 milliseconds
+2026-08-02T18:29:42.680Z | ErrorTelegram | Ошибка инициализации бота | Системная ошибка: Promise timed out after 90000 milliseconds
+2026-08-02T18:29:42.681Z | ErrorTelegram | Критическая ошибка при запуске бота: | Системная ошибка: Promise timed out after 90000 milliseconds
+2026-08-02T19:30:40.349Z | ErrorTelegram | Ошибка инициализации бота | Системная ошибка: Promise timed out after 90000 milliseconds
+2026-08-02T19:30:40.349Z | ErrorTelegram | Критическая ошибка при запуске бота: | Системная ошибка: Promise timed out after 90000 milliseconds
+2026-08-02T19:41:04.346Z | ErrorTelegram | Ошибка инициализации бота | Системная ошибка: Promise timed out after 90000 milliseconds
+2026-08-02T19:41:04.347Z | ErrorTelegram | Критическая ошибка при запуске бота: | Системная ошибка: Promise timed out after 90000 milliseconds
+2026-08-02T20:12:08.742Z | ErrorTelegram | Ошибка инициализации бота | Системная ошибка: Promise timed out after 90000 milliseconds
+2026-08-02T20:12:08.743Z | ErrorTelegram | Критическая ошибка при запуске бота: | Системная ошибка: Promise timed out after 90000 milliseconds
