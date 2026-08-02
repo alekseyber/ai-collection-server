@@ -111,6 +111,7 @@ services:
       - /home/berestov/projects/ai-collection-server/app/tsconfig.json:/usr/src/app/tsconfig.json
       - /home/berestov/projects/ai-collection-server/app/nodemon.json:/usr/src/app/nodemon.json
       - /home/berestov/projects/ai-collection-server/.env.nodejs:/usr/src/app/.env.nodejs
+      - /home/berestov/projects/ai-collection-server/app/src/tests:/usr/src/app/tests/e2e
     ports:
       - "3501:3501"
     networks:

@@ -9,7 +9,9 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "build": "tsc",
-    "postinstall": "tsc"
+    "postinstall": "tsc",
+    "test:e2e": "cd src/tests && .venv/bin/python3 test-runner.py",
+    "test:e2e:setup": "cd src/tests && .venv/bin/python3 -m venv .venv && .venv/bin/pip install pyyaml requests"
   },
   "keywords": [],
   "author": "",

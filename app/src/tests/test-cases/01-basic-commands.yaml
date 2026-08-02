@@ -1,0 +1,21 @@
+name: "Базовые команды"
+description: "Проверка /start, /clear, /getmodel"
+model: silicon_deepseek_v_4_flash
+
+steps:
+  - action: send_message
+    text: "/start"
+    expect:
+      no_errors: true
+
+  - action: send_message
+    text: "/getmodel"
+    expect:
+      reply_contains: "DeepSeek"
+      no_errors: true
+
+  - action: send_message
+    text: "/clear"
+    expect:
+      reply_contains: "История диалога очищена"
+      no_errors: true

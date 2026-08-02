@@ -1,0 +1,25 @@
+name: "Полный цикл: команда → AI диалог → инструменты"
+description: "Проверка связки: сброс истории, AI диалог, вызов read_file инструмента"
+model: silicon_deepseek_v_4_flash
+
+steps:
+  - action: send_message
+    text: "/start"
+    expect:
+      no_errors: true
+    critical: true
+
+  - action: send_message
+    text: "Напиши короткое приветствие на русском"
+    expect:
+      no_errors: true
+
+  - action: send_message
+    text: "Прочитай файл src/services/ai-service/agents/react-agent.ts и скажи максимальное количество итераций"
+    expect:
+      no_errors: true
+
+  - action: send_message
+    text: "/clear"
+    expect:
+      no_errors: true

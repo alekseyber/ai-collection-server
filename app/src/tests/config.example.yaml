@@ -1,0 +1,10 @@
+# Конфигурация E2E тестирования
+# Скопируй в config.yaml и заполни свои данные
+#
+# test_bot_token — токен тестового бота (BotFather → /newbot → Disable privacy)
+# main_bot_username — username основного бота (без @)
+# group_chat_id — ID группы с обоими ботами (оставь ~ — определится авто)
+
+test_bot_token: ""
+main_bot_username: "alexfdev_bot"
+group_chat_id: ~

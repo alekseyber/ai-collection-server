@@ -1,0 +1,9 @@
+# E2E test configuration
+# Copy config.example.yaml to config.yaml and fill in your token
+config.yaml
+
+# Python virtual environment
+.venv/
+
+# Test reports
+report_*.json

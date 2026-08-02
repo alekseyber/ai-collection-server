@@ -1,0 +1,24 @@
+name: "AI диалог (обычное сообщение)"
+description: "Проверка что бот отвечает на обычные сообщения через ReAct агента"
+model: silicon_deepseek_v_4_flash
+
+steps:
+  - action: send_message
+    text: "/start"
+    expect:
+      no_errors: true
+
+  - action: send_message
+    text: "Привет! Как у тебя дела?"
+    expect:
+      no_errors: true
+
+  - action: send_message
+    text: "Сколько будет 2+2? Ответь одной цифрой."
+    expect:
+      no_errors: true
+
+  - action: send_message
+    text: "/clear"
+    expect:
+      no_errors: true

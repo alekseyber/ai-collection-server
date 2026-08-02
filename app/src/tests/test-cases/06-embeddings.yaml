@@ -1,0 +1,10 @@
+name: "Режим embeddings (/on_embeddings)"
+description: "Проверка включения режима индексации embeddings"
+model: silicon_deepseek_v_4_flash
+
+steps:
+  - action: send_message
+    text: "/on_embeddings"
+    expect:
+      reply_contains: "embeddings"
+      no_errors: true

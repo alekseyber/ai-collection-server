@@ -1,0 +1,11 @@
+name: "Меню выбора модели (/modelmenu)"
+description: "Проверка inline-клавиатуры выбора модели"
+model: silicon_deepseek_v_4_flash
+
+steps:
+  - action: send_message
+    text: "/modelmenu"
+    expect:
+      no_errors: true
+    # Бот пришлёт сообщение с inline-клавиатурой
+    # Ответ может быть "Выберите модель:" или что-то подобное

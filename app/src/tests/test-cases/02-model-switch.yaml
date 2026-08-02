@@ -1,0 +1,23 @@
+name: "Смена модели через /setmodel"
+description: "Проверка переключения модели и отображения текущей"
+model: silicon_deepseek_v_4_flash
+
+steps:
+  - action: send_message
+    text: "/getmodel"
+    expect:
+      reply_contains: "DeepSeek"
+      no_errors: true
+    # Первый шаг — узнать текущую модель
+
+  - action: send_message
+    text: "/setmodel silicon_deepseek_v_4_flash"
+    expect:
+      reply_contains: "Модель изменена"
+      no_errors: true
+
+  - action: send_message
+    text: "/getmodel"
+    expect:
+      reply_contains: "DeepSeek V4-Flash silicon"
+      no_errors: true

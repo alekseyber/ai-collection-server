@@ -1,0 +1,20 @@
+name: "Проверка инструментов (tool system)"
+description: "Проверка что ReAct-агент может использовать инструменты (read_file)"
+model: silicon_deepseek_v_4_flash
+
+steps:
+  - action: send_message
+    text: "/start"
+    expect:
+      no_errors: true
+    critical: true
+
+  - action: send_message
+    text: "Прочитай файл src/index.ts в проекте, скажи сколько там строк"
+    expect:
+      no_errors: true
+
+  - action: send_message
+    text: "Поищи в файлах упоминание maxIterations, скажи в каком файле и строке"
+    expect:
+      no_errors: true

@@ -145,6 +145,14 @@ app/src/
 └── tsconfig.json
 ```
 
+## 🧪 E2E Testing
+
+Система E2E тестирования бота через inject-mode: `docker exec` → инжекция fake update'ов напрямую в handlers.
+
+Тест-кейсы: `app/src/tests/test-cases/` (7 шт).
+
+Подробнее: [app/src/tests/README.md](app/src/tests/README.md)
+
 ## Дорожная карта
 
 - ✅ **Phase 1.1** — Streaming, JSON mode, ReAct agent loop
