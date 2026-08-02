@@ -172,7 +172,7 @@ export const loadConfig = async () => {
   // Значения по умолчанию
   const DEFAULT_TOKEN_TELEGRAM = await redisInstance.getEnvConfig('DEFAULT_TOKEN_TELEGRAM');
   const DEEPSEEK_API_KEY = await redisInstance.getEnvConfig('DEEPSEEK_API_KEY');
-  const OPEN_AI_API_KEY = await redisInstance.getEnvConfig('OPEN_AI_API_KEY');
+  const OPEN_ROUTER_API_KEY = await redisInstance.getEnvConfig('OPEN_ROUTER_API_KEY');
   const KINOPOISK_API_KEY = await redisInstance.getEnvConfig('KINOPOISK_API_KEY');
   const TIMEWEB_AI_API_KEY = await redisInstance.getEnvConfig('TIMEWEB_AI_API_KEY');
   const SILICON_FLOW_AI_API_KEY = await redisInstance.getEnvConfig('SILICON_FLOW_AI_API_KEY');
@@ -249,7 +249,7 @@ Hello \_World\_!
     PROVIDER_BASE_URLS,
     DEFAULT_TOKEN_TELEGRAM,
     DEEPSEEK_API_KEY,
-    OPEN_AI_API_KEY,
+    OPEN_ROUTER_API_KEY,
     DEFAULT_START_PROMPT,
     DEFAULT_START_MESSAGE,
     MODELS_CONFIG,

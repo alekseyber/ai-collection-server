@@ -6,7 +6,7 @@ const { Pool } = pkg;
 //   port: 5432,
 //   database: 'pgdb',
 //   user: 'pguser',
-//   password: 'pgpass',
+//   password: process.env.PGPASS || 'pgpass',
 // });
 
 //CREATE TABLE docs (
@@ -34,7 +34,7 @@ export class PgClientService {
       port: 5432,
       database: 'pgdb',
       user: 'pguser',
-      password: 'pgpass',
+      password: process.env.PGPASS || 'pgpass',
     });
   }
 

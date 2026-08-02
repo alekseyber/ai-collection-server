@@ -8,7 +8,7 @@ export class OpenRouterProvider implements AiProvider {
     constructor(private config: LoadConfig) {
         this.client = new OpenAI({
             baseURL: PROVIDER_BASE_URLS['openrouter'],
-            apiKey: this.config.OPEN_AI_API_KEY,
+            apiKey: this.config.OPEN_ROUTER_API_KEY,
         });
     }
 
