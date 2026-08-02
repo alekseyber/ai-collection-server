@@ -3,59 +3,44 @@ import { AiProviderFactory, Message } from './ai-provider.interface';
 import { EmbeddingService } from './embedding-service';
 import { ConcreteAiProviderFactory } from './providers/ai-provider.factory';
 import { EmbeddingProvider } from './providers/embedding-provider';
+import { ReActAgent } from './agents/react-agent';
 
 export class AIService {
-    private config: LoadConfig;
-    public embeddingService: EmbeddingService;
-    private providerFactory: AiProviderFactory;
+  private config: LoadConfig;
+  public embeddingService: EmbeddingService;
+  private providerFactory: AiProviderFactory;
+  reactAgent: ReActAgent;  // public — доступен из handlers
 
-    constructor(config: LoadConfig) {
-        this.config = config;
-        this.embeddingService = new EmbeddingService(new EmbeddingProvider(config))
-        this.providerFactory = new ConcreteAiProviderFactory(config, this.embeddingService);
-    }
+  constructor(config: LoadConfig) {
+    this.config = config;
+    this.embeddingService = new EmbeddingService(new EmbeddingProvider(config));
+    this.providerFactory = new ConcreteAiProviderFactory(config, this.embeddingService);
+    this.reactAgent = new ReActAgent(config, this.embeddingService, this.providerFactory);
+  }
 
-    public async askModelRoute(
-        userId: number,
-        message: string,
-        history: Message[],
-        model: string
-    ): Promise<string> {
-        try {
-            const modelConfig = this.config.MODELS_CONFIG[model];
-            
-            if (!modelConfig) {
-                return this.config.ERROR_MODEL_MESSAGE + " -askModelRoute";
-            }
+  public async askModelRoute(
+    userId: number,
+    message: string,
+    history: Message[],
+    model: string,
+  ): Promise<string> {
+    try {
+      const modelConfig = this.config.MODELS_CONFIG[model];
+      if (!modelConfig) {
+        return this.config.ERROR_MODEL_MESSAGE + ' -askModelRoute';
+      }
 
-            const provider = this.providerFactory.createProvider(modelConfig.modelsGroupe);
-   
-            if (!provider) {
-                return this.config.ERROR_MODEL_MESSAGE;
-            }
-
-            return await provider.ask(history, userId, model);
-        } catch (error) {
-            console.error('Ошибка при обращении к модели:', error);
-            return this.config.ERROR_MODEL_MESSAGE;
+      let fullAnswer = '';
+      for await (const step of this.reactAgent.runStream(history, message, model)) {
+        if (step.type === 'final') {
+          fullAnswer = step.answer;
         }
+      }
+
+      return fullAnswer || 'Ответ не получен';
+    } catch (error) {
+      console.error('Ошибка при обращении к модели:', error);
+      return this.config.ERROR_MODEL_MESSAGE;
     }
-
-    // // Специфичные методы остаются, но могут быть вынесены при необходимости
-    // public async preparationOllama(contentOut: string, promt: string) {
-    //     try {
-    //         // const content = `${promt}\n${contentOut}`.trim();
-    //         // const provider = new OllamaProvider(this.config);
-    //         // return await provider.ask([{
-    //         //     role: "assistant",
-    //         //     content,
-    //         // }], 0, "preparation_ollama");
-    //     } catch (error: any) {
-    //         throw error;
-    //     }
-    // }
-
-    // public async preparationTimewebCloudAi(contentOut: string, promt: string) {
-    //    // return await this.llmDeepseekAgent.preparationTimewebCloudAi(contentOut, promt);
-    // }
+  }
 }

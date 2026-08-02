@@ -1,17 +1,14 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { LoadConfig } from './config/config';
 
-
 // Опционально: экспортируйте типы и утилиты
 export type { AxiosResponse };
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export class KinopoiskService {
   private config: LoadConfig;
   private apiClientKinopoisk: AxiosInstance;
-
 
   constructor(config: LoadConfig) {
     this.config = config;
@@ -28,7 +25,6 @@ export class KinopoiskService {
     // Интерцептор для запросов
     this.apiClientKinopoisk.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-
         // Логирование запроса
         //  console.log('Request:', config.method?.toUpperCase(), config.url);
         return config;
@@ -37,9 +33,8 @@ export class KinopoiskService {
         // Обработка ошибок запроса
         console.error('Request Error:', error);
         return Promise.reject(error);
-      }
+      },
     );
-
 
     // Интерцептор для ответов
     this.apiClientKinopoisk.interceptors.response.use(
@@ -63,17 +58,19 @@ export class KinopoiskService {
 
         // Передача ошибки дальше
         return Promise.reject(error);
-      }
+      },
     );
   }
 
   public async getAvpMoviesReating(page?: number): Promise<any> {
     try {
-      const response = await this.apiClientKinopoisk.get(`api/v1/kp_users/62186102/votes?page=${page || 1}`);
+      const response = await this.apiClientKinopoisk.get(
+        `api/v1/kp_users/62186102/votes?page=${page || 1}`,
+      );
       return response.data;
     } catch (error) {
       console.error('Error fetching movies:', error);
-      return `Error fetching movies: ${JSON.stringify(error)}`
+      return `Error fetching movies: ${JSON.stringify(error)}`;
       //throw error;
     }
   }
@@ -83,7 +80,7 @@ export class KinopoiskService {
       const startData = await this.getAvpMoviesReating(1);
       const totalPages = startData?.totalPages || 0;
       if (totalPages === 0) {
-        throw new Error("Страницы не найдены");
+        throw new Error('Страницы не найдены');
       }
       let items = startData?.items || [];
 
@@ -100,7 +97,6 @@ export class KinopoiskService {
         }
       }
       return items;
-
     } catch (error) {
       console.error('Error fetching movies:', error);
       //   return `Error fetching movies: ${JSON.stringify(error)}`

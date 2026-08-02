@@ -1,28 +1,29 @@
 import { getParseMode } from './get-parse-mode';
 
 function escapeMarkdownV2(text: string): string {
-    return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+  return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
 function getHasMarkdownV2Status(text: string): boolean {
-    // Все спецсимволы MarkdownV2, которые нужно экранировать
-    const markdownV2SpecialChars = /[_*\[\]()~`>#+\-=|{}.!]/;
-    return markdownV2SpecialChars.test(text);
+  // Все спецсимволы MarkdownV2, которые нужно экранировать
+  const markdownV2SpecialChars = /[_*\[\]()~`>#+\-=|{}.!]/;
+  return markdownV2SpecialChars.test(text);
 }
 export type FormattedText = {
-    hasMarkdownV2: boolean;
-    formattedText: string;
-}
+  hasMarkdownV2: boolean;
+  formattedText: string;
+};
 function formattedText(text: string): FormattedText {
-    return {
-        hasMarkdownV2: getParseMode(text)?.ok || false,
-        formattedText: text,
-    }
+  return {
+    hasMarkdownV2: getParseMode(text)?.ok || false,
+    formattedText: text,
+  };
 }
 
 function formatingResponseAiContent(response: Record<string, string> | string): string {
-    const content = typeof response === 'object' && response?.content ? response.content : response as string;
-    return content.replace(/<|im_(start|end|think)|>/g, '');
+  const content =
+    typeof response === 'object' && response?.content ? response.content : (response as string);
+  return content.replace(/<|im_(start|end|think)|>/g, '');
 }
 
 /**
@@ -31,77 +32,76 @@ function formatingResponseAiContent(response: Record<string, string> | string): 
  * @returns {number[]} Массив чисел, соответствующих допустимым элементам строки.
  */
 function parseNumbers(input: string | undefined): number[] {
-    if (input === undefined) return [];
+  if (input === undefined) return [];
 
-    return input
-        .split(',')
-        .map(part => {
-            const trimmed = part.trim();
-            if (trimmed === '') return null; // Игнорируем пустые элементы
-            const num = Number(trimmed);
-            return isNaN(num) ? null : num; // Проверяем, что это число
-        })
-        .filter((num): num is number => num !== null); // Удаляем null значения
+  return input
+    .split(',')
+    .map((part) => {
+      const trimmed = part.trim();
+      if (trimmed === '') return null; // Игнорируем пустые элементы
+      const num = Number(trimmed);
+      return isNaN(num) ? null : num; // Проверяем, что это число
+    })
+    .filter((num): num is number => num !== null); // Удаляем null значения
 }
 
 function getCsvKinopiskRating(itemsProps: any[]): string {
-    const items = itemsProps || [];
+  const items = itemsProps || [];
 
+  // Заголовки CSV
+  const headers = 'nameRu;nameOriginal;year;type;userRating;ratingKinopoisk;ratingImbd';
 
-    // Заголовки CSV
-    const headers = "nameRu;nameOriginal;year;type;userRating;ratingKinopoisk;ratingImbd";
+  // Формируем строки данных
+  const rows = items.map((item: any) => {
+    const nameRu = item?.nameRu ? `"${item.nameRu.replace(/"/g, '""')}"` : '';
+    const nameOriginal = item?.nameOriginal ? `"${item.nameOriginal.replace(/"/g, '""')}"` : '';
+    const year = item?.year ?? '';
+    const type = item?.type ?? '';
+    const userRating = item?.userRating ?? '';
+    const ratingKinopoisk = item?.ratingKinopoisk ?? '';
+    const ratingImbd = item?.ratingImbd ?? '';
+    return `${nameRu};${nameOriginal};${year};${type};${userRating};${ratingKinopoisk};${ratingImbd}`;
+  });
 
-    // Формируем строки данных
-    const rows = items.map((item: any) => {
-        const nameRu = item?.nameRu ? `"${item.nameRu.replace(/"/g, '""')}"` : '';
-        const nameOriginal = item?.nameOriginal ? `"${item.nameOriginal.replace(/"/g, '""')}"` : '';
-        const year = item?.year ?? '';
-        const type = item?.type ?? '';
-        const userRating = item?.userRating ?? '';
-        const ratingKinopoisk = item?.ratingKinopoisk ?? '';
-        const ratingImbd = item?.ratingImbd ?? '';
-        return `${nameRu};${nameOriginal};${year};${type};${userRating};${ratingKinopoisk};${ratingImbd}`;
-    });
+  // Добавляем первую строку с информацией о странице как комментарий (необязательно)
+  // Или убираем её из тела CSV, чтобы не нарушать структуру
+  const csvContent = [headers, ...rows].join('\n');
 
-    // Добавляем первую строку с информацией о странице как комментарий (необязательно)
-    // Или убираем её из тела CSV, чтобы не нарушать структуру
-    const csvContent = [
-        headers,
-        ...rows
-    ].join('\n');
-
-    return csvContent;
-
+  return csvContent;
 }
 
-function formatingKinopiskRating(response: any, page: number): { info: string; csvContent: string } {
-    if (!response?.totalPages && !response?.items) return { info: 'Ответ не получен', csvContent: "" };
+function formatingKinopiskRating(
+  response: any,
+  page: number,
+): { info: string; csvContent: string } {
+  if (!response?.totalPages && !response?.items)
+    return { info: 'Ответ не получен', csvContent: '' };
 
-    const items = response?.items || [];
+  const items = response?.items || [];
 
-    const info = `Текущая страница ${page} из ${response?.totalPages}, следующее сообщение CSV с данными`;
+  const info = `Текущая страница ${page} из ${response?.totalPages}, следующее сообщение CSV с данными`;
 
-    const csvContent = getCsvKinopiskRating(items)
+  const csvContent = getCsvKinopiskRating(items);
 
-    return { info, csvContent };
+  return { info, csvContent };
 }
 
 export interface Utils {
-    escapeMarkdownV2: (text: string) => string;
-    getHasMarkdownV2Status: (text: string) => boolean;
-    formattedText: (text: string) => FormattedText;
-    formatingResponseAiContent: (response: Record<string, string> | string) => string;
-    parseNumbers: (input: string | undefined) => number[];
-    formatingKinopiskRating: (response: any, page: number) => { info: string; csvContent: string };
-    getCsvKinopiskRating: (itemsProps: any[]) => string;
+  escapeMarkdownV2: (text: string) => string;
+  getHasMarkdownV2Status: (text: string) => boolean;
+  formattedText: (text: string) => FormattedText;
+  formatingResponseAiContent: (response: Record<string, string> | string) => string;
+  parseNumbers: (input: string | undefined) => number[];
+  formatingKinopiskRating: (response: any, page: number) => { info: string; csvContent: string };
+  getCsvKinopiskRating: (itemsProps: any[]) => string;
 }
 
 export const utils: Utils = {
-    escapeMarkdownV2,
-    getHasMarkdownV2Status,
-    formattedText,
-    formatingResponseAiContent,
-    parseNumbers,
-    formatingKinopiskRating,
-    getCsvKinopiskRating,
-}
+  escapeMarkdownV2,
+  getHasMarkdownV2Status,
+  formattedText,
+  formatingResponseAiContent,
+  parseNumbers,
+  formatingKinopiskRating,
+  getCsvKinopiskRating,
+};

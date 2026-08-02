@@ -2,7 +2,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 
 
 // Создаем инстанс Axios с базовыми настройками
 const apiClient: AxiosInstance = axios.create({
-//  baseURL: process.env.API_BASE_URL || 'https://api.example.com', // Базовый URL
+  //  baseURL: process.env.API_BASE_URL || 'https://api.example.com', // Базовый URL
   timeout: 10000, // Таймаут запроса (мс)
   headers: {
     'Content-Type': 'application/json',
@@ -14,18 +14,16 @@ const apiClient: AxiosInstance = axios.create({
 // Интерцептор для запросов
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-
     // Логирование запроса
-  //  console.log('Request:', config.method?.toUpperCase(), config.url);
+    //  console.log('Request:', config.method?.toUpperCase(), config.url);
     return config;
   },
   (error) => {
     // Обработка ошибок запроса
     console.error('Request Error:', error);
     return Promise.reject(error);
-  }
+  },
 );
-
 
 // Интерцептор для ответов
 apiClient.interceptors.response.use(
@@ -49,9 +47,8 @@ apiClient.interceptors.response.use(
 
     // Передача ошибки дальше
     return Promise.reject(error);
-  }
+  },
 );
-
 
 // Экспортируем настроенный инстанс
 export default apiClient;

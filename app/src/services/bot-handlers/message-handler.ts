@@ -6,98 +6,137 @@ import { utils } from '../utils/utils';
 import { ErrorTelegram } from '../errors/error-telegram.class';
 import { BotHandlersContext } from './setup-bot-handlers';
 
-
 export function handleMessage(bot: Telegraf<Context>, ctxData: BotHandlersContext): void {
-    bot.on('message', async (ctx, next) => {
-        const chatId = ctx.chat?.id;
-        const userId = ctx.from?.id;
+  bot.on('message', async (ctx, next) => {
+    const chatId = ctx.chat?.id;
+    const userId = ctx.from?.id;
 
-        if (!chatId || !userId || !('text' in ctx.message)) return;
+    if (!chatId || !userId || !('text' in ctx.message)) return;
 
-        const text = ctx.message.text;
+    const text = ctx.message.text;
 
-        // Команды, которые не попадают в историю
-        const serviceCommands = [
-            '/setmodel', '/getmodel', '/modelmenu',
-            '/setprompt', '/getprompt', '/setstartmsg',
-            '/getstartmsg', '/clear', '/start',
-            '/getavpkinorating', '/on_embeddings'
-        ];
+    // Команды, которые не попадают в историю
+    const serviceCommands = [
+      '/setmodel', '/getmodel', '/modelmenu',
+      '/setprompt', '/getprompt', '/setstartmsg',
+      '/getstartmsg', '/clear', '/start',
+      '/getavpkinorating', '/on_embeddings',
+    ];
 
-        if (serviceCommands.some(cmd => text.startsWith(cmd))) {
-            next();
-            return; // Пропускаем, так как команды обрабатываются отдельно
+    if (serviceCommands.some(cmd => text.startsWith(cmd))) {
+      next();
+      return;
+    }
+
+    const state = ctxData.userStates[String(userId)];
+
+    if (state === 'embeddings') {
+      await ctx.reply('Ожидайте, запрос отправлен');
+      await ctxData.aiService.embeddingService.addEmbeddingSource(text);
+      await ctx.reply('Текст добавлен в embeddings. Введите следующий.');
+      next();
+      return;
+    }
+
+    if (state === 'kinopoisk' && isNaN(Number(text))) {
+      await ctx.reply('Введите номер страницы');
+      next();
+      return;
+    }
+
+    if (state === 'kinopoisk') {
+      await ctx.sendChatAction('typing');
+      const page = Number(text);
+      try {
+        const response = await ctxData.kinopoiskService.getAvpMoviesReating(page);
+        const { info, csvContent } = utils.formatingKinopiskRating(response, page);
+        await ctx.reply(info);
+        if (csvContent) {
+          await ctx.replyWithDocument(
+            { source: Buffer.from(csvContent, 'utf8'), filename: `ratings_page_${page}.csv` },
+            { caption: '📊 Рейтинг фильмов AVP (CSV)' },
+          );
         }
+      } catch (error: any) {
+        new ErrorTelegram('Ошибка при получении рейтинга Kinopoisk', error, ctx);
+      }
+      ctxData.clearUserState(userId);
+      next();
+      return;
+    }
 
-        const state = ctxData.userStates[String(userId)];
+    // --- Обычный диалог с AI (со streaming) ---
+    console.log(`Получено сообщение от пользователя ${userId}: ${text}`);
+    let history = await redisInstance.loadUserHistory(userId);
+    if (history.length === 0) {
+      history.push({ role: 'system', content: ctxData.config.startPrompt });
+    }
 
-        if (state === 'embeddings') {
-            await ctx.reply('Ожидайте, запрос отправлен');
-            await ctxData.aiService.embeddingService.addEmbeddingSource(text);
-            await ctx.reply('Текст добавлен в embeddings. Введите следующий.');
-            next();
-            return;
-        }
+    history.push({ role: 'user', content: text });
+    const model = await redisInstance.getUserModel(userId);
 
-        if (state === 'kinopoisk' && isNaN(Number(text))) {
-            await ctx.reply('Введите номер страницы');
-            next();
-            return;
-        }
+    // Отправляем начальное сообщение и сразу typing
+    const sentMsg = await ctx.reply('⏳ Думаю...');
+    await ctx.sendChatAction('typing');
 
-        if (state === 'kinopoisk') {
-            await ctx.sendChatAction('typing');
-            const page = Number(text);
+    let fullContent = '';
+    let lastSentLength = 0;
+    const MAX_MSG_LEN = 3900;  // Telegram лимит — 4096, оставляем запас
+    let updateCount = 0;
+
+    try {
+      for await (const step of ctxData.aiService.reactAgent.runStream(history, text, model)) {
+        if (step.type === 'chunk' && step.content) {
+          fullContent += step.content;
+
+          // Троттлим обновления: каждый 15-й чанк или каждые ~200ms
+          updateCount++;
+          if (updateCount % 15 === 0 && fullContent.length > lastSentLength + 20) {
+            const displayText = fullContent.length > MAX_MSG_LEN
+              ? fullContent.slice(0, MAX_MSG_LEN) + '...'
+              : fullContent;
             try {
-                const response = await ctxData.kinopoiskService.getAvpMoviesReating(page);
-                const { info, csvContent } = utils.formatingKinopiskRating(response, page);
-                await ctx.reply(info);
-                if (csvContent) {
-                    await ctx.replyWithDocument(
-                        { source: Buffer.from(csvContent, 'utf8'), filename: `ratings_page_${page}.csv` },
-                        { caption: '📊 Рейтинг фильмов AVP (CSV)' }
-                    );
-                }
-            } catch (error: any) {
-                new ErrorTelegram('Ошибка при получении рейтинга Kinopoisk', error, ctx);
-            }
-            ctxData.clearUserState(userId);
-            next();
-            return;
+              await ctx.telegram.editMessageText(chatId, sentMsg.message_id, undefined, displayText);
+              lastSentLength = fullContent.length;
+            } catch {}
+          }
         }
 
-        // Обычный диалог с AI
-        console.log(`Получено сообщение от пользвателя ${userId}: ${text}`);
-        let history = await redisInstance.loadUserHistory(userId);
-        if (history.length === 0) {
-            history.push({ role: 'system', content: ctxData.config.startPrompt });
-        }
+        if (step.type === 'final') {
+          fullContent = step.answer;
 
-        history.push({ role: 'user', content: text });
-        const model = await redisInstance.getUserModel(userId);
+          // Форматируем ответ, сохраняем историю
+          const formatted = utils.formatingResponseAiContent(fullContent);
+          history.push({ role: 'assistant', content: formatted });
+          await redisInstance.saveUserHistory(userId, history);
 
-        await ctx.sendChatAction('typing');
-
-        let responseModel: string
-
-        try {
-            responseModel = await ctxData.aiService.askModelRoute(userId, text, history, model);
-            if (responseModel !== ctxData.config.ERROR_MODEL_MESSAGE) {
-                history.push({ role: 'assistant', content: utils.formatingResponseAiContent(responseModel) });
-                await redisInstance.saveUserHistory(userId, history);
-            }
-
-            await ctx.reply(responseModel, {
-                parse_mode: 'Markdown',
-                link_preview_options: { is_disabled: false }
+          // Отправляем финальный ответ
+          try {
+            await ctx.telegram.editMessageText(chatId, sentMsg.message_id, undefined, fullContent, {
+              parse_mode: 'Markdown',
+              link_preview_options: { is_disabled: false },
             });
-        } catch (error: any) {
-            new ErrorTelegram('Ошибка при генерации ответа от модели', error, ctx);
+          } catch {
+            // Если Markdown сломался — отправляем без форматирования
             try {
-                await ctx.reply(convert(responseModel, "remove"), {});
-            } catch (e: any) {
-                new ErrorTelegram('Ошибка после convert', e, ctx);
-            }
+              await ctx.telegram.editMessageText(chatId, sentMsg.message_id, undefined, fullContent);
+            } catch {}
+          }
+          return;
         }
-    });
+      }
+
+      // Если цикл завершился без final (лимит итераций)
+      if (!fullContent) {
+        await ctx.telegram.editMessageText(chatId, sentMsg.message_id, undefined, 'Превышен лимит итераций. Попробуй уточнить запрос.');
+      }
+
+    } catch (error: any) {
+      new ErrorTelegram('Ошибка при генерации ответа', error, ctx);
+      try {
+        await ctx.telegram.editMessageText(chatId, sentMsg.message_id, undefined, 
+          'Произошла ошибка. Попробуй ещё раз.');
+      } catch {}
+    }
+  });
 }

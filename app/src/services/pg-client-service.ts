@@ -17,13 +17,13 @@ const { Pool } = pkg;
 //);
 
 /**
-* table docs_nomic максимальное качество поиска / семантического соответствия и тебя не пугает вектор 768 → nomic-embed-text
-* table docs меньше память/диск и быстрее поиск, а данные не супер‑сложные (обычный текст, документация, чат‑контент)  384 → all-minilm:l6-v2
+ * table docs_nomic максимальное качество поиска / семантического соответствия и тебя не пугает вектор 768 → nomic-embed-text
+ * table docs меньше память/диск и быстрее поиск, а данные не супер‑сложные (обычный текст, документация, чат‑контент)  384 → all-minilm:l6-v2
  */
 
 const TABLE_NAME = 'docs_nomic';
 
-export type RowSimilar = { id: number; source: string; content: string; similarity: number; }
+export type RowSimilar = { id: number; source: string; content: string; similarity: number };
 
 export class PgClientService {
   private pool: typeof Pool;
@@ -44,11 +44,14 @@ export class PgClientService {
 
   public async saveChunk(source: string, content: string, qEmb: number[]) {
     const qEmbStr = this.getEmbString(qEmb);
-    await this.pool.query(`INSERT INTO ${TABLE_NAME} (source, content, embedding) VALUES ($1, $2, $3::vector)`, [source, content, qEmbStr]);
+    await this.pool.query(
+      `INSERT INTO ${TABLE_NAME} (source, content, embedding) VALUES ($1, $2, $3::vector)`,
+      [source, content, qEmbStr],
+    );
   }
 
   public async searchSimilar(qEmb: number[], topK: number = 5): Promise<RowSimilar[]> {
-    const qEmbStr = this.getEmbString(qEmb);;
+    const qEmbStr = this.getEmbString(qEmb);
 
     const { rows } = await this.pool.query(
       `
@@ -66,5 +69,3 @@ export class PgClientService {
     return rows;
   }
 }
-
-
