@@ -1,5 +1,9 @@
 # AI Collection Server
 
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 Мульти-провайдерный AI-агент с Telegram-ботом. Поддерживает streaming, JSON mode, ReAct agent loop, RAG (pgvector) и Tool System.
 
 ## Архитектура
