@@ -34,7 +34,7 @@ export class PgClientService {
       port: 5432,
       database: 'pgdb',
       user: 'pguser',
-      password: process.env.PGPASS || 'pgpass',
+      password: process.env.PGPASS || process.env.POSTGRES_PASSWORD || '',
     });
   }
 

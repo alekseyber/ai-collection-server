@@ -31,3 +31,4 @@ ollama/llm
 app/src/services/errors/logs/*.env.dev
 .env.nodejs.dev
 .env.dev
+.env.pg
