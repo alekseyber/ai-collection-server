@@ -69,10 +69,10 @@ services:
   #    - proxy
   #    restart: unless-stopped
   redis:
-    image: redis:7-alpine
+    image: redis:8.8.3-alpine
     container_name: redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - /home/berestov/projects/ai-collection-server/redis/data:/data
     networks:
@@ -87,7 +87,7 @@ services:
       POSTGRES_PASSWORD: pgpass
       POSTGRES_DB: pgdb
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - /home/berestov/projects/ai-collection-server/pgvector_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -112,11 +112,33 @@ services:
       - /home/berestov/projects/ai-collection-server/app/nodemon.json:/usr/src/app/nodemon.json
       - /home/berestov/projects/ai-collection-server/.env.nodejs:/usr/src/app/.env.nodejs
       - /home/berestov/projects/ai-collection-server/app/src/tests:/usr/src/app/tests/e2e
-    ports:
-      - "3501:3501"
     networks:
       - proxy
     restart: unless-stopped
+  landing:
+    build:
+      context: ../landing
+      dockerfile: Dockerfile
+    container_name: landing
+    restart: unless-stopped
+    networks:
+      - proxy
+  main:
+    build:
+      context: ../main
+      dockerfile: Dockerfile
+    container_name: main
+    restart: unless-stopped
+    networks:
+      - proxy
+  error-pages:
+    build:
+      context: ../error-pages
+      dockerfile: Dockerfile
+    container_name: error-pages
+    restart: unless-stopped
+    networks:
+      - proxy
 
 networks:
   proxy:
