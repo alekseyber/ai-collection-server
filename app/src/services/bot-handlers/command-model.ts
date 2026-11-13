@@ -19,7 +19,9 @@ export function handleModelCommands(bot: Telegraf<Context>, ctxData: BotHandlers
     const userId = ctx.from?.id;
     if (!userId) return;
     const model = await ctxData.redisInstance.getUserModel(userId);
-    await ctx.reply(`Текущая модель: ${ctxData.config.MODELS_CONFIG[model]?.text}`);
+    const modelText =
+      ctxData.config.MODELS_CONFIG[model]?.text || ctxData.config.MODEL_DEFAULT.text;
+    await ctx.reply(`Текущая модель: ${modelText}`);
   });
 
   bot.hears(/\/modelmenu/, async (ctx) => {
@@ -27,6 +29,11 @@ export function handleModelCommands(bot: Telegraf<Context>, ctxData: BotHandlers
     if (!userId) return;
 
     const { modelList } = ctxData.allowedService.getModelList(userId);
+    // Пустой список — у пользователя нет прав ни на одну модель.
+    // Раньше в этом случае уходила пустая inline-клавиатура, и Telegram отвечал ошибкой.
+    if (modelList.length === 0) {
+      return ctx.reply('🚫 Доступ к выбору модели только для авторизованных пользователей.');
+    }
     const keyboard = {
       reply_markup: {
         inline_keyboard: modelList.map((m) => [

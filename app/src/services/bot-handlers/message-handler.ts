@@ -28,6 +28,14 @@ export function handleMessage(bot: Telegraf<Context>, ctxData: BotHandlersContex
       return;
     }
 
+    // AI-диалог и связанные режимы — только для авторизованных пользователей.
+    // Проверка стоит до обращения к модели, чтобы неавторизованный запрос
+    // не доходил до провайдера и не тратил токены.
+    if (!ctxData.allowedService.getSuperUserPermission(userId)) {
+      await ctx.reply('🚫 Доступ к AI только для авторизованных пользователей.');
+      return;
+    }
+
     const state = ctxData.userStates[String(userId)];
 
     if (state === 'embeddings') {
@@ -73,7 +81,14 @@ export function handleMessage(bot: Telegraf<Context>, ctxData: BotHandlersContex
     }
 
     history.push({ role: 'user', content: text });
-    const model = await redisInstance.getUserModel(userId);
+    // Дефолт берём из конфига: пустое значение означает «пользователь не выбирал модель».
+    // Сохранённый выбор проверяем по списку доступных: модель могли отключить (off) или
+    // удалить с диска — иначе запрос уходил в никуда и падал 404 model not found.
+    const storedModel = await redisInstance.getUserModel(userId);
+    const model =
+      storedModel && ctxData.allowedService.getModelPermissionStatus(userId, storedModel)
+        ? storedModel
+        : ctxData.config.MODEL_DEFAULT.key;
 
     // Отправляем начальное сообщение и сразу typing
     const sentMsg = await ctx.reply('⏳ Думаю...');

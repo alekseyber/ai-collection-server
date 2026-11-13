@@ -70,13 +70,16 @@ async function setUserModel(userId: number, model: string): Promise<void> {
   }
 }
 
+// Возвращает выбранную модель или '' — вызывающая сторона подставляет дефолт из конфига.
+// Раньше здесь был хардкод 'llama3', которого нет в MODELS_CONFIG: пользователь без
+// выбора получал «Модель не найдена» вместо ответа.
 async function getUserModel(userId: number): Promise<string> {
   try {
     const model = (await redisClient.get(`model:${userId}`)) as string;
-    return model || 'llama3'; // По умолчанию llama3
+    return model || '';
   } catch (error) {
     console.error('Ошибка загрузки модели пользователя:', error);
-    return 'llama3';
+    return '';
   }
 }
 

@@ -18,14 +18,23 @@ async function gracefulShutdown(signal: string) {
   }
 }
 
-// Запуск бота с обработкой неотловленных исключений
+// Запуск бота: транзиентная ошибка Telegram на старте (таймаут, протухший
+// callback от прошлой сессии) не должна оставлять бота лежать — под nodemon
+// процесс после падения сам не поднимается.
 (async () => {
-  try {
-    await initializeBot();
-    console.log('Telegram бот запущен...');
-  } catch (error) {
-    new ErrorTelegram('Критическая ошибка при запуске бота:', error);
-    await redisInstance.quit();
-    process.exit(1);
+  const attempts = 3;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      await initializeBot();
+      console.log('Telegram бот запущен...');
+      return;
+    } catch (error) {
+      new ErrorTelegram(`Ошибка инициализации бота (попытка ${i}/${attempts})`, error);
+      if (i === attempts) {
+        await redisInstance.quit();
+        process.exit(1);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
   }
 })();
