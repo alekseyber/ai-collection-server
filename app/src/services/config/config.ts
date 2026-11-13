@@ -11,6 +11,10 @@ export type AIModel = {
   superUser?: boolean;
   modelsGroupe: ModelsGroupe;
   toolsDisabled?: boolean;
+  /** Своя системная инструкция модели (для локальных LoRA — формулировка обучения). */
+  system_prompt?: string;
+  /** Нативный флаг Ollama: рассуждение модели. false — быстрый ответ без thinking. */
+  think?: boolean;
 };
 
 export type ModelsConfig = {
@@ -57,6 +61,25 @@ const MODELS_CONFIG: ModelsConfig = {
     api_url: 'http://qwen-ai-research:12536/completion',
     off: true,
     modelsGroupe: ModelsGroupe.LLAMA_CPP,
+  },
+  // 13.11.2026: LoRA-модель стиля Алексея (R1, обучена на его парах).
+  // Стенд llama-style живёт на ml:8081 и поднимается по требованию:
+  // scripts/llamacpp-idle.sh start style. Тулы не нужны — модель только переписывает текст.
+  style_v2: {
+    key: 'style_v2',
+    key_api: 'style-v2',
+    text: 'стиль (моя манера) v2',
+    // Группа OPENAI_COMPAT: провайдер шлёт messages на /v1/chat/completions по своему
+    // api_url. LLAMA_CPP шлёт legacy {prompt, n_predict} и всегда добавляет JSON-инструкцию,
+    // OLLAMA игнорирует api_url и ходит в /api/chat по адресу из PROVIDER_BASE_URLS.
+    // Адрес стенда живёт в .env.nodejs (STYLE_MODEL_URL), а не в коде: репозиторий публичный,
+    // внутренние адреса сети в него не попадают. Локальный дефолт — для запуска на самой машине.
+    api_url: process.env.STYLE_MODEL_URL || 'http://127.0.0.1:8081/v1/chat/completions',
+    modelsGroupe: ModelsGroupe.OPENAI_COMPAT,
+    // Своя системная инструкция: LoRA обучена именно на этой формулировке
+    // (см. scripts/train_qlora.py, SYSTEM), общий стартовый промпт бота сбивает стиль.
+    system_prompt: 'Перепиши текст в моей манере. Сохрани факты, числа и имена. Верни только текст.',
+    toolsDisabled: true,
   },
   deepseek_chat: {
     key: 'deepseek-chat',

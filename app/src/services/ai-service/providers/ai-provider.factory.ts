@@ -7,6 +7,7 @@ import { TimewebProvider } from './timeweb.provider';
 import { LlamaCppProvider } from './llamacpp.provider';
 import { EmbeddingService } from '../embedding-service';
 import { SiliconProvider } from './silicon.provider';
+import { OpenAICompatProvider } from './openai-compat.provider';
 
 export class ConcreteAiProviderFactory implements AiProviderFactory {
   private providers: Map<
@@ -23,6 +24,7 @@ export class ConcreteAiProviderFactory implements AiProviderFactory {
       ModelsGroupe,
       new (config: LoadConfig, embeddingService: EmbeddingService) => AiProvider
     >([
+      [ModelsGroupe.OPENAI_COMPAT, OpenAICompatProvider],
       [ModelsGroupe.OPEN_ROUTER, OpenRouterProvider],
       [ModelsGroupe.OLLAMA, OllamaProvider],
       [ModelsGroupe.LLAMA_CPP, LlamaCppProvider],
