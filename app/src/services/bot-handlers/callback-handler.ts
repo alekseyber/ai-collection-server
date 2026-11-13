@@ -23,6 +23,24 @@ export function handleCallbackQuery(bot: Telegraf<Context>, ctxData: BotHandlers
 
     if (!userId) return await ack();
 
+    // Кнопка режима стиля из /modelmenu: права проверяем здесь же, до записи в redis.
+    if (data === 'style_toggle') {
+      if (!ctxData.allowedService.getAdminPermission(userId)) {
+        return await ack('Режим стиля доступен только администраторам');
+      }
+      const key = `style_mode:${userId}`;
+      const cur = await ctxData.redisInstance.getConfig(key);
+      const next = cur === '1' ? '0' : '1';
+      await ctxData.redisInstance.setConfig(key, next);
+      await ctx.reply(
+        next === '1'
+          ? '✍️ Режим стиля включён: ответы переписываются в твоей манере. Код, списки и таблицы не трогаются.'
+          : '📄 Режим стиля выключен.',
+      );
+      await ack();
+      return;
+    }
+
     try {
       const model = ctxData.allowedService.getModelPermissionSelected(userId, data);
       if (!model) return await ack('Доступ запрещён');
