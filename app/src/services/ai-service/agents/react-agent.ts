@@ -47,6 +47,28 @@ export class ReActAgent {
         this.toolRegistry = toolRegistry || new ToolRegistry();
     }
 
+    /**
+     * Текущая дата и время для системного промта. У модели нет доступа к часам:
+     * без этой строки она уверенно называет дату из обучающих данных (2024/2025).
+     */
+    private nowLine(): string {
+        const now = new Date();
+        const date = new Intl.DateTimeFormat('ru-RU', {
+            timeZone: 'Europe/Moscow',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            weekday: 'long',
+        }).format(now);
+        const time = new Intl.DateTimeFormat('ru-RU', {
+            timeZone: 'Europe/Moscow',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        }).format(now);
+        return `Сейчас ${date}, ${time} по Москве (UTC+3).`;
+    }
+
     private getTools(): ToolDefinition[] {
         return this.toolRegistry.getAll().map(t => {
             const params = t.parameters;
@@ -86,23 +108,36 @@ export class ReActAgent {
         const toolDescriptions = this.toolRegistry.getToolDescriptions();
 
         const systemContent = REACT_SYSTEM_PROMPT +
-            '\n\nДоступные инструменты:\n' + toolDescriptions;
+            '\n\nДоступные инструменты:\n' + toolDescriptions +
+            '\n\n' + this.nowLine();
 
         // Если тулинг отключен для модели (toolsDisabled: true) — простой стриминг без ReAct
         if (modelConfig.toolsDisabled) {
+            // ReAct-промт здесь не нужен: он требует «только JSON» на выходе, и этот JSON
+            // уходил прямо в чат. Системный промт диалога берём из конфига, историю —
+            // без системных сообщений, чтобы slice(-6) не срезал сам промт.
+            const dialog = history.filter((m) => m.role !== 'system').slice(-6);
             const msgs: Message[] = [
-                { role: 'system', content: REACT_SYSTEM_PROMPT },
-                ...history.slice(-6),
-                { role: 'user', content: userMessage },
+                { role: 'system', content: `${this.config.startPrompt}\n\n${this.nowLine()}` },
+                ...dialog,
             ];
+            // message-handler уже положил текущий текст в историю — не дублируем
+            if (msgs[msgs.length - 1]?.content !== userMessage) {
+                msgs.push({ role: 'user', content: userMessage });
+            }
+            let answer = '';
             try {
                 for await (const chunk of provider.askStream(msgs, 0, modelKey)) {
+                    answer += chunk;
                     yield { type: 'chunk', content: chunk };
                 }
             } catch (error: any) {
                 yield { type: 'final', answer: 'Ошибка: ' + error.message };
                 return;
             }
+            // final нужен обработчику: без него ответ не считается завершённым
+            // и не сохраняется в историю диалога
+            yield { type: 'final', answer: answer || 'Модель вернула пустой ответ.' };
             return;
         }
 
