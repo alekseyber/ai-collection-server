@@ -29,6 +29,8 @@ pgvector_data_backup/
 app/dist
 ollama/llm
 app/src/services/errors/logs/*.env.dev
+# Логи приложения пишутся локально и в репозитории только мешают диффам.
+app/src/services/errors/logs/*.log
 .env.nodejs.dev
 .env.dev
 .env.pg
