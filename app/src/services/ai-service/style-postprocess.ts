@@ -26,6 +26,8 @@ export type StyleResult = {
   blocks: number;
   prose: number;
   styled: number;
+  /** Блоки, которые после двух попыток остались почти копией входа. */
+  nearCopy: number;
   rejected: number;
   ms: number;
 };
@@ -43,6 +45,25 @@ function isProse(block: string): boolean {
 }
 
 /** Проверка, что стилизация не потеряла факты. Пороги откалиброваны по прототипу. */
+/** Похожесть текста на исходник: если модель почти скопировала, переписывания не было. */
+function similarity(a: string, b: string): number {
+  const norm = (t: string) => t.toLowerCase().replace(/\s+/g, ' ').trim();
+  const x = norm(a), y = norm(b);
+  if (!x || !y) return 0;
+  const bigrams = (t: string) => {
+    const m = new Map<string, number>();
+    for (let i = 0; i < t.length - 1; i++) {
+      const g = t.slice(i, i + 2);
+      m.set(g, (m.get(g) || 0) + 1);
+    }
+    return m;
+  };
+  const A = bigrams(x), B = bigrams(y);
+  let inter = 0;
+  for (const [g, n] of A) inter += Math.min(n, B.get(g) || 0);
+  return (2 * inter) / (x.length + y.length - 2 || 1);
+}
+
 function guard(src: string, out: string): { ok: boolean; why: string } {
   if (!out || out.trim().length < 20) return { ok: false, why: 'пусто' };
   const ratio = out.length / Math.max(1, src.length);
@@ -75,8 +96,17 @@ export class StylePostprocessor {
     return Boolean(c?.api_url);
   }
 
-  private async restyle(block: string): Promise<{ text: string; ms: number }> {
+  private async restyle(
+    block: string,
+    attempt = 0,
+  ): Promise<{ text: string; ms: number }> {
     const c = this.modelCfg()!;
+    // Вторая попытка — когда модель почти дословно повторила вход: та же
+    // температура даёт тот же копирующий ответ, поэтому меняем формулировку задачи.
+    const userContent =
+      attempt === 0
+        ? block
+        : `Перепиши этот текст другими словами, не повторяя исходные формулировки: ${block}`;
     const started = Date.now();
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), BLOCK_TIMEOUT_MS);
@@ -93,9 +123,9 @@ export class StylePostprocessor {
           model: c.key_api || 'style-v2',
           messages: [
             { role: 'system', content: c.system_prompt || SYSTEM_PROMPT },
-            { role: 'user', content: block },
+            { role: 'user', content: userContent },
           ],
-          temperature: 0.7,
+          temperature: attempt === 0 ? 0.7 : 0.85,
           max_tokens: 600,
         }),
         signal: ctrl.signal,
@@ -126,6 +156,7 @@ export class StylePostprocessor {
       blocks: 0,
       prose: 0,
       styled: 0,
+      nearCopy: 0,
       rejected: 0,
       ms: 0,
     };
@@ -143,11 +174,27 @@ export class StylePostprocessor {
       while (cursor < idx.length) {
         const i = idx[cursor++];
         try {
-          const { text: out } = await this.restyle(blocks[i]);
-          const check = guard(blocks[i], out);
-          if (check.ok) {
-            results.set(i, out);
+          let best = '';
+          let bestSim = 1;
+          let ok = false;
+          // До двух попыток: первый ответ мог быть почти копией входа
+          // (модель часто не переписывает формальный текст), тогда просим иначе.
+          for (let attempt = 0; attempt < 2; attempt++) {
+            const { text: out } = await this.restyle(blocks[i], attempt);
+            const check = guard(blocks[i], out);
+            if (!check.ok) continue;
+            const sim = similarity(blocks[i], out);
+            if (!ok || sim < bestSim) {
+              best = out;
+              bestSim = sim;
+              ok = true;
+            }
+            if (sim <= 0.93) break; // переписал достаточно, вторая попытка не нужна
+          }
+          if (ok) {
+            results.set(i, best);
             base.styled++;
+            if (bestSim > 0.93) base.nearCopy++;
           } else {
             base.rejected++;
           }
@@ -167,6 +214,7 @@ export class StylePostprocessor {
       blocks: base.blocks,
       prose: base.prose,
       styled: base.styled,
+      nearCopy: base.nearCopy,
       rejected: base.rejected,
       ms: base.ms,
       chars_in: text.length,
