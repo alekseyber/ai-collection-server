@@ -26,20 +26,52 @@ const MODELS_CONFIG: ModelsConfig = {
   deepseek_r1_ollama: {
     key: 'deepseek_r1_ollama',
     key_api: 'deepseek-r1:1.5b',
-    text: 'deepseek r1',
+    text: 'deepseek r1 1.5b local',
     api_url: 'http://ollama:11434/v1/chat/completions',
     modelsGroupe: ModelsGroupe.OLLAMA,
     superUser: false,
+    // 05.11.2026: 1.5b-дистилл ломает русский (выдаёт китайские иероглифы вперемешку,
+    // на части запросов весь бюджет уходит в reasoning и content приходит пустой).
+    // Модель оставлена на диске, но из выбора убрана до замены на рабочую.
     off: true,
   },
   mistral_latest: {
     key: 'mistral_latest',
     key_api: 'mistral:latest',
-    text: 'mistral',
+    text: 'mistral local',
+    api_url: 'http://ollama:11434/v1/chat/completions',
+    modelsGroupe: ModelsGroupe.OLLAMA,
+    // 05.11.2026: модель удалена с диска по итогам замера (llama 7.2B, ~7 ток/с,
+    // русский слабее gemma3:4b) — запись выключена, из меню выбора убрана.
+    off: true,
+    toolsDisabled: true,
+    superUser: true,
+  },
+  qwen3_8b_ollama: {
+    key: 'qwen3_8b_ollama',
+    key_api: 'qwen3:8b',
+    text: 'qwen3 8b local',
+    api_url: 'http://ollama:11434/v1/chat/completions',
+    modelsGroupe: ModelsGroupe.OLLAMA,
+    // Инференс только на CPU (8 потоков): ReAct-цикл с JSON-тулами на 8B слишком
+    // медленный и хрупкий — сначала проверяем простым стримингом.
+    toolsDisabled: true,
+    superUser: true,
+    // 05.11.2026: в меню бота отключено — 7 ток/с на CPU и выдуманные результаты
+    // в агентном режиме. Модель остаётся на диске для экспериментов.
+    off: true,
+  },
+  gemma3_4b_ollama: {
+    key: 'gemma3_4b_ollama',
+    key_api: 'gemma3:4b',
+    text: 'gemma3 4b local',
     api_url: 'http://ollama:11434/v1/chat/completions',
     modelsGroupe: ModelsGroupe.OLLAMA,
     off: true,
+    toolsDisabled: true,
     superUser: true,
+    // 05.11.2026: в меню бота отключено вместе с qwen3:8b — локальные модели
+    // оставлены на диске как исследовательская площадка, не как рабочий инструмент.
   },
   llama2_7b: {
     key: 'llama2_7b',
@@ -179,6 +211,9 @@ const MODELS_CONFIG: ModelsConfig = {
     modelsGroupe: ModelsGroupe.TIMEWEB_CLOUD_AI,
     toolsDisabled: true,
     superUser: true,
+    // 27.10.2026: агент Timeweb Cloud AI отвечает 403 agent_suspended —
+    // модель недоступна, выключена из списка выбора (ключ и провайдер оставлены)
+    off: true,
   },
 };
 
