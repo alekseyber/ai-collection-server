@@ -108,6 +108,9 @@ const MODELS_CONFIG: ModelsConfig = {
     // внутренние адреса сети в него не попадают. Локальный дефолт — для запуска на самой машине.
     api_url: process.env.STYLE_MODEL_URL || 'http://127.0.0.1:8081/v1/chat/completions',
     modelsGroupe: ModelsGroupe.OPENAI_COMPAT,
+    // Только для суперюзеров: модель обучена на личных текстах, в чужих диалогах
+    // её быть не должно (getModelList отдаёт её лишь тем, кто в SUPER_USERS_TELEGRAM).
+    superUser: true,
     // Своя системная инструкция: LoRA обучена именно на этой формулировке
     // (см. scripts/train_qlora.py, SYSTEM), общий стартовый промпт бота сбивает стиль.
     system_prompt: 'Перепиши текст в моей манере. Сохрани факты, числа и имена. Верни только текст.',

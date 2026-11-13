@@ -19,7 +19,7 @@ export function handleMessage(bot: Telegraf<Context>, ctxData: BotHandlersContex
     const serviceCommands = [
       '/setmodel', '/getmodel', '/modelmenu',
       '/setprompt', '/getprompt', '/setstartmsg',
-      '/getstartmsg', '/clear', '/start',
+      '/getstartmsg', '/clear', '/start', '/style',
       '/getavpkinorating', '/on_embeddings',
     ];
 
@@ -100,7 +100,14 @@ export function handleMessage(bot: Telegraf<Context>, ctxData: BotHandlersContex
     let updateCount = 0;
 
     try {
-      for await (const step of ctxData.aiService.reactAgent.runStream(history, text, model)) {
+      // Режим стилизации включается командой /style on и хранится в redis:
+      // гейт по правам уже пройден выше, здесь только чтение флага.
+      const styleFlag = await redisInstance.getConfig(`style_mode:${userId}`);
+      const restyle = styleFlag === '1';
+
+      for await (const step of ctxData.aiService.reactAgent.runStream(history, text, model, {
+        restyle,
+      })) {
         if (step.type === 'chunk' && step.content) {
           fullContent += step.content;
 

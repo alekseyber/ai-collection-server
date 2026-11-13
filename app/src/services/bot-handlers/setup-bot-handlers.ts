@@ -11,6 +11,7 @@ import { handleCallbackQuery } from './callback-handler';
 import { handlePromptCommands } from './command-prompt';
 import { handleKinopoiskCommand } from './command-kinopoisk';
 import { handleEmbeddingsCommand } from './command-embeddings';
+import { handleStyleCommands } from './command-style';
 import { RedisClient, redisInstance } from '../redis-client';
 
 export interface BotHandlersContext {
@@ -56,5 +57,6 @@ export function setupBotHandlers(
   handlePromptCommands(bot, context);
   handleKinopoiskCommand(bot, context);
   handleEmbeddingsCommand(bot, context);
+  handleStyleCommands(bot, context);
   handleCallbackQuery(bot, context);
 }

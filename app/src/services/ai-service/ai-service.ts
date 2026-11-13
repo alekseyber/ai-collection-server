@@ -5,17 +5,21 @@ import { ConcreteAiProviderFactory } from './providers/ai-provider.factory';
 import { EmbeddingProvider } from './providers/embedding-provider';
 import { ReActAgent } from './agents/react-agent';
 import { ToolRegistry } from './tools/tool-registry';
+import { StylePostprocessor } from './style-postprocess';
 
 export class AIService {
   private config: LoadConfig;
   public embeddingService: EmbeddingService;
   private providerFactory: AiProviderFactory;
   reactAgent: ReActAgent;  // public — доступен из handlers
+  /** Пост-обработка ответов стиль-моделью (режим /style on). */
+  public stylePostprocessor: StylePostprocessor;
 
   constructor(config: LoadConfig, toolRegistry?: ToolRegistry) {
     this.config = config;
     this.embeddingService = new EmbeddingService(new EmbeddingProvider(config));
     this.providerFactory = new ConcreteAiProviderFactory(config, this.embeddingService);
+    this.stylePostprocessor = new StylePostprocessor(config);
     this.reactAgent = new ReActAgent(
       config,
       this.embeddingService,

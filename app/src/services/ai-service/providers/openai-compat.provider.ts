@@ -36,7 +36,11 @@ export class OpenAICompatProvider implements AiProvider {
   async ask(messages: Message[], _userId: number, modelKey: string): Promise<string> {
     const res = await fetch(this.url(modelKey), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Стенд может требовать ключ (llama-server --api-key): гейт на уровне эндпоинта
+        ...(process.env.STYLE_API_KEY ? { Authorization: `Bearer ${process.env.STYLE_API_KEY}` } : {}),
+      },
       body: JSON.stringify(this.buildBody(messages, modelKey, false)),
     });
     if (!res.ok) throw new Error(`OpenAI-compat error: ${res.status} ${await res.text()}`);
@@ -47,7 +51,10 @@ export class OpenAICompatProvider implements AiProvider {
   async *askStream(messages: Message[], _userId: number, modelKey: string): AsyncGenerator<string> {
     const res = await fetch(this.url(modelKey), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.STYLE_API_KEY ? { Authorization: `Bearer ${process.env.STYLE_API_KEY}` } : {}),
+      },
       body: JSON.stringify(this.buildBody(messages, modelKey, true)),
     });
     if (!res.ok) throw new Error(`OpenAI-compat error: ${res.status} ${await res.text()}`);

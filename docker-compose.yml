@@ -105,6 +105,8 @@ services:
     volumes:
       # Монтируем только необходимые файлы для разработки
       - /home/berestov/projects/ai-collection-server/app/src:/usr/src/app/src
+      # логи прогонов стиль-модели (режим /style): без тома теряются при пересборке
+      - /home/berestov/projects/ai-collection-server/logs:/usr/src/app/logs
       - /home/berestov/projects/ai-collection-server/app/package.json:/usr/src/app/package.json
       - /home/berestov/projects/ai-collection-server/app/package-lock.json:/usr/src/app/package-lock.json
       - /home/berestov/projects/ai-collection-server/app/tsconfig.json:/usr/src/app/tsconfig.json

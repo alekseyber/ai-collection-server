@@ -4,6 +4,7 @@ import { EmbeddingService } from '../embedding-service';
 import { ConcreteAiProviderFactory } from '../providers/ai-provider.factory';
 import { ToolRegistry } from '../tools/tool-registry';
 import { ToolDefinition } from '../tools/tool.interface';
+import { StylePostprocessor } from '../style-postprocess';
 
 export const REACT_SYSTEM_PROMPT = `Ты — JSON-агент. Отвечай ТОЛЬКО валидным JSON строго по схеме, без лишнего текста.
 
@@ -90,7 +91,8 @@ export class ReActAgent {
     async *runStream(
         history: Message[],
         userMessage: string,
-        modelKey: string
+        modelKey: string,
+        options?: { restyle?: boolean }
     ): AsyncGenerator<ReActStep | { type: 'chunk'; content: string }> {
         const modelConfig = this.config.MODELS_CONFIG[modelKey];
         if (!modelConfig) {
@@ -125,19 +127,30 @@ export class ReActAgent {
             if (msgs[msgs.length - 1]?.content !== userMessage) {
                 msgs.push({ role: 'user', content: userMessage });
             }
+            // Если включена стилизация, копим ответ целиком: отдавать по кускам
+            // исходный текст, а потом подменять его переписанным — пользователь
+            // увидит две версии подряд.
+            const restyle = Boolean(options?.restyle);
             let answer = '';
             try {
                 for await (const chunk of provider.askStream(msgs, 0, modelKey)) {
                     answer += chunk;
-                    yield { type: 'chunk', content: chunk };
+                    if (!restyle) yield { type: 'chunk', content: chunk };
                 }
             } catch (error: any) {
                 yield { type: 'final', answer: 'Ошибка: ' + error.message };
                 return;
             }
+            let finalAnswer = answer || 'Модель вернула пустой ответ.';
+            if (restyle && answer.trim()) {
+                // fail-open: при любой проблеме постпроцессор вернёт исходный текст
+                const styled = await new StylePostprocessor(this.config).apply(answer);
+                finalAnswer = styled.text;
+                yield { type: 'chunk', content: styled.text };
+            }
             // final нужен обработчику: без него ответ не считается завершённым
             // и не сохраняется в историю диалога
-            yield { type: 'final', answer: answer || 'Модель вернула пустой ответ.' };
+            yield { type: 'final', answer: finalAnswer };
             return;
         }
 
