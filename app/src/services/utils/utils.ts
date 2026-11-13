@@ -28,7 +28,7 @@ function formatingResponseAiContent(response: Record<string, string> | string): 
 
 /**
  * Преобразует строку с разделителями в массив чисел.
- * @param {string} input - Входная строка (например, "692059922,1769298937").
+ * @param {string} input - Входная строка (например, "<telegram_user_id>,<another_user_id>").
  * @returns {number[]} Массив чисел, соответствующих допустимым элементам строки.
  */
 function parseNumbers(input: string | undefined): number[] {
