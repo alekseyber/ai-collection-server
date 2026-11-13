@@ -101,12 +101,15 @@ export class StylePostprocessor {
     attempt = 0,
   ): Promise<{ text: string; ms: number }> {
     const c = this.modelCfg()!;
-    // Вторая попытка — когда модель почти дословно повторила вход: та же
-    // температура даёт тот же копирующий ответ, поэтому меняем формулировку задачи.
-    const userContent =
+    // Вторая попытка — когда модель почти дословно повторила вход.
+    // Дополнительное указание кладём в СИСТЕМНЫй промпт, а не в текст пользователя:
+    // проверено, что при вставке в user-сообщение модель переписывает вместе с ним
+    // и выдаёт ответ, начинающийся с самой инструкции (уходило в чат).
+    const system =
       attempt === 0
-        ? block
-        : `Перепиши этот текст другими словами, не повторяя исходные формулировки: ${block}`;
+        ? c.system_prompt || SYSTEM_PROMPT
+        : (c.system_prompt || SYSTEM_PROMPT) +
+          ' Не повторяй формулировки исходного текста, перепиши своими словами.';
     const started = Date.now();
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), BLOCK_TIMEOUT_MS);
@@ -122,8 +125,8 @@ export class StylePostprocessor {
         body: JSON.stringify({
           model: c.key_api || 'style-v2',
           messages: [
-            { role: 'system', content: c.system_prompt || SYSTEM_PROMPT },
-            { role: 'user', content: userContent },
+            { role: 'system', content: system },
+            { role: 'user', content: block },
           ],
           temperature: attempt === 0 ? 0.7 : 0.85,
           max_tokens: 600,
