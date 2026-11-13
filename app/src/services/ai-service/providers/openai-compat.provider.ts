@@ -99,7 +99,19 @@ export class OpenAICompatProvider implements AiProvider {
     const text = await this.ask(messages, userId, modelKey);
     const start = text.indexOf('{');
     const end = text.lastIndexOf('}');
-    if (start === -1 || end === -1) throw new Error('JSON не найден в ответе модели');
-    return JSON.parse(text.slice(start, end + 1)) as T;
+    if (start === -1 || end === -1) {
+      // Модель ответила обычным текстом вместо JSON. Это не повод отдавать
+      // пользователю «JSON не найден»: ответ по существу уже есть, а инструменты —
+      // необязательная часть. Возвращаем его как финальный, чтобы чат работал
+      // даже с моделями, которые плохо держат формат.
+      if (text.trim()) return { type: 'final', answer: text.trim() } as unknown as T;
+      throw new Error('Модель вернула пустой ответ');
+    }
+    try {
+      return JSON.parse(text.slice(start, end + 1)) as T;
+    } catch {
+      // Битый JSON (обрыв, лишняя запятая) — тоже отдаём как текст
+      return { type: 'final', answer: text.trim() } as unknown as T;
+    }
   }
 }

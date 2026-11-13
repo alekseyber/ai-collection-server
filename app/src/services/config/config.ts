@@ -203,6 +203,10 @@ const MODELS_CONFIG: ModelsConfig = {
     // ключ берётся из DEEPSEEK_API_KEY (переменные окружения → кеш в redis)
     api_key_env: 'DEEPSEEK_API_KEY',
     superUser: true,
+    // Режим диалога без ReAct: модель плохо держит «отвечай только JSON»
+    // (в чате выдавала обычный текст и падала с «JSON не найден»), а терять
+    // ответ из-за формата незачем. Инструменты этому боту не критичны.
+    toolsDisabled: true,
     off: false,
   },
   silicon_deepseek_v_4_flash: {
