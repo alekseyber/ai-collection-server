@@ -114,6 +114,10 @@ services:
     networks:
       - proxy
     restart: unless-stopped
+    # Пик за три месяца работы — 388 МБ; лимит 1 ГБ ловит утечку раньше, чем её
+    # заметит OOM-киллер на хосте, и не мешает штатной работе. Вес — как у camofox.
+    mem_limit: 1g
+    cpu_shares: 1024
   landing:
     build:
       context: ../landing
