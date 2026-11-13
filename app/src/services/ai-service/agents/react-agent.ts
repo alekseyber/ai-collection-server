@@ -176,8 +176,17 @@ export class ReActAgent {
             }
 
             if (step.type === 'final') {
+                let answerText = step.answer;
+                // Режим стиля применяется и к агентным ответам: guard пропускает
+                // код, списки и таблицы, поэтому факты из инструментов не портятся.
+                if (options?.restyle && answerText?.trim()) {
+                    const styled = await new StylePostprocessor(this.config).apply(answerText);
+                    answerText = styled.text;
+                    yield { type: 'chunk', content: answerText };
+                    yield { type: 'final', answer: answerText };
+                    return;
+                }
                 // split answer into chunks for smooth streaming UX
-                const answerText = step.answer;
                 const chunkSize = Math.max(1, Math.floor(answerText.length / 10));
                 for (let i = 0; i < answerText.length; i += chunkSize) {
                     yield { type: 'chunk', content: answerText.slice(i, i + chunkSize) };

@@ -11,6 +11,8 @@ export type AIModel = {
   superUser?: boolean;
   modelsGroupe: ModelsGroupe;
   toolsDisabled?: boolean;
+  /** Имя поля LoadConfig с API-ключом провайдера (ключ лежит в переменных окружения). */
+  api_key_env?: string;
   /** Своя системная инструкция модели (для локальных LoRA — формулировка обучения). */
   system_prompt?: string;
   /** Нативный флаг Ollama: рассуждение модели. false — быстрый ответ без thinking. */
@@ -187,6 +189,17 @@ const MODELS_CONFIG: ModelsConfig = {
     superUser: true,
     off: true,
   },
+  deepseek_flash_api: {
+    key: 'deepseek_flash_api',
+    key_api: 'deepseek-flash',
+    text: 'DeepSeek Flash (API)',
+    api_url: 'https://api.deepseek.com/v1/chat/completions',
+    modelsGroupe: ModelsGroupe.OPENAI_COMPAT,
+    // ключ берётся из DEEPSEEK_API_KEY (переменные окружения → кеш в redis)
+    api_key_env: 'DEEPSEEK_API_KEY',
+    superUser: true,
+    off: false,
+  },
   silicon_deepseek_v_4_flash: {
     key: 'silicon_deepseek_v_4_flash',
     key_api: 'deepseek-ai/DeepSeek-V4-Flash',
@@ -194,7 +207,9 @@ const MODELS_CONFIG: ModelsConfig = {
     api_url: 'https://api.siliconflow.com/v1/chat/completions',
     modelsGroupe: ModelsGroupe.SILICON_CLOUD_AI,
     superUser: true,
-    off: false,
+    // 13.11.2026: основной провайдер — DeepSeek напрямую (deepseek_flash_api).
+    // Silicon остаётся как запасной вариант, из меню убран.
+    off: true,
   },
   preparation_ollama: {
     key: 'preparation_ollama',
@@ -220,7 +235,7 @@ const MODELS_CONFIG: ModelsConfig = {
   },
 };
 
-const MODEL_DEFAULT = MODELS_CONFIG.silicon_deepseek_v_4_flash;
+const MODEL_DEFAULT = MODELS_CONFIG.deepseek_flash_api;
 
 // Базовые URL провайдеров (один источник правды)
 export const PROVIDER_BASE_URLS: Record<string, string> = {

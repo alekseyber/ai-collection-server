@@ -29,6 +29,17 @@ export class OpenAICompatProvider implements AiProvider {
     };
   }
 
+  /** Ключ провайдера: имя поля конфига задаётся в модели (api_key_env). */
+  private authHeader(modelKey: string): Record<string, string> {
+    const cfg = this.config.MODELS_CONFIG[modelKey] as unknown as { api_key_env?: string };
+    const name = cfg?.api_key_env;
+    const key = (name ? (this.config as unknown as Record<string, string>)[name] : '') ||
+      (name ? process.env[name] : '') ||
+      process.env.STYLE_API_KEY ||
+      '';
+    return key ? { Authorization: `Bearer ${key}` } : {};
+  }
+
   private url(modelKey: string): string {
     return this.config.MODELS_CONFIG[modelKey]?.api_url || this.config.MODEL_DEFAULT.api_url;
   }
@@ -38,8 +49,8 @@ export class OpenAICompatProvider implements AiProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Стенд может требовать ключ (llama-server --api-key): гейт на уровне эндпоинта
-        ...(process.env.STYLE_API_KEY ? { Authorization: `Bearer ${process.env.STYLE_API_KEY}` } : {}),
+        // Ключ: либо api_key_env модели (облако), либо STYLE_API_KEY (локальный стенд)
+        ...this.authHeader(modelKey),
       },
       body: JSON.stringify(this.buildBody(messages, modelKey, false)),
     });
@@ -53,7 +64,7 @@ export class OpenAICompatProvider implements AiProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(process.env.STYLE_API_KEY ? { Authorization: `Bearer ${process.env.STYLE_API_KEY}` } : {}),
+        ...this.authHeader(modelKey),
       },
       body: JSON.stringify(this.buildBody(messages, modelKey, true)),
     });
