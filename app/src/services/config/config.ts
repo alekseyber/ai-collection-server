@@ -312,6 +312,16 @@ Hello \_World\_!
 `;
 
   const startPrompt = await redisInstance.getConfig('start_prompt', DEFAULT_START_PROMPT);
+  // Примеры стиля для режима few-shot лежат в redis, а не в репозитории:
+  // это личные тексты автора, в публичном коде им не место.
+  const styleExamplesRaw = (await redisInstance.getConfig('style_examples')) || '[]';
+  let styleExamples: string[] = [];
+  try {
+    const parsed = JSON.parse(styleExamplesRaw);
+    if (Array.isArray(parsed)) styleExamples = parsed.filter((x) => typeof x === 'string');
+  } catch {
+    styleExamples = [];
+  }
   const startMessage = await redisInstance.getConfig('start_message', DEFAULT_START_MESSAGE);
   const startToolsPrompt = await redisInstance.getConfig(
     'start_tools_prompt',
@@ -341,6 +351,7 @@ Hello \_World\_!
     MODELS_CONFIG,
     MODEL_DEFAULT,
     startPrompt,
+    styleExamples,
     startMessage,
     startToolsPrompt,
     satrtFrmattedTextPromt,

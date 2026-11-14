@@ -1,4 +1,4 @@
-import { appendFile, mkdir } from 'fs/promises';
+import { appendFile, mkdir, readFile } from 'fs/promises';
 import { dirname } from 'path';
 import { LoadConfig } from '../config/config';
 
@@ -17,6 +17,35 @@ import { LoadConfig } from '../config/config';
 
 const SYSTEM_PROMPT =
   'Перепиши текст в моей манере. Сохрани факты, числа и имена. Верни только текст.';
+
+/**
+ * Режим работы: 'local' — LoRA-модель на своём стенде, 'cloud' — few-shot на DeepSeek.
+ * Облако даёт перестройку чужого текста (LoRA этого не умеет), но тянет примеры стиля
+ * и сам текст в API; локальный режим — для приватных текстов и нулевой стоимости.
+ * Переключается переменной STYLE_MODE, примеры стиля лежат вне репозитория.
+ */
+const CLOUD_MODE = process.env.STYLE_MODE === 'cloud';
+const EXAMPLES_FILE = process.env.STYLE_EXAMPLES_FILE || '';
+const STYLE_RULES =
+  'Стиль автора: строчная первая буква, запятые почти не ставит, склеивает короткие ' +
+  'предложения через "и"/"а еще", пишет "то что", "что бы", разговорные связки, ' +
+  'без канцелярита и без списков.';
+const NUM_RE_G = /\d+[\d.,]*|(?<!\w)[A-Za-z_][A-Za-z0-9_]{2,}/g;
+
+let cachedExamples: string[] | null = null;
+/** Примеры стиля: сначала из файла (если задан), иначе из redis через config. */
+async function styleExamples(fromConfig: string[] = []): Promise<string[]> {
+  if (cachedExamples) return cachedExamples;
+  if (EXAMPLES_FILE) {
+    try {
+      const arr = JSON.parse(await readFile(EXAMPLES_FILE, 'utf8'));
+      if (Array.isArray(arr)) return (cachedExamples = arr.filter((x) => typeof x === 'string'));
+    } catch {
+      /* файла нет — берём из конфига */
+    }
+  }
+  return (cachedExamples = fromConfig);
+}
 const BLOCK_TIMEOUT_MS = 20000;
 const MAX_PARALLEL = 3;
 const MIN_PROSE_LEN = 60;
@@ -86,8 +115,9 @@ export class StylePostprocessor {
   constructor(private config: LoadConfig) {}
 
   private modelCfg() {
-    return this.config.MODELS_CONFIG['style_v2'] as
-      | { api_url: string; key_api?: string; system_prompt?: string }
+    const key = CLOUD_MODE ? 'deepseek_flash_api' : 'style_v2';
+    return this.config.MODELS_CONFIG[key] as
+      | { api_url: string; key_api?: string; system_prompt?: string; api_key_env?: string }
       | undefined;
   }
 
@@ -105,11 +135,22 @@ export class StylePostprocessor {
     // Дополнительное указание кладём в СИСТЕМНЫй промпт, а не в текст пользователя:
     // проверено, что при вставке в user-сообщение модель переписывает вместе с ним
     // и выдаёт ответ, начинающийся с самой инструкции (уходило в чат).
+    const examples = CLOUD_MODE
+      ? await styleExamples((this.config as unknown as { styleExamples?: string[] }).styleExamples || [])
+      : [];
+    const tokens = (block.match(NUM_RE_G) || []).slice(0, 12);
+    const baseSystem = CLOUD_MODE
+      ? 'Ты переписываешь текст в манере конкретного человека. Измени структуру: порядок мыслей, ' +
+        'границы предложений, длину фраз. Сохрани ВСЕ факты, числа, имена и латинские идентификаторы ' +
+        'дословно. Верни только переписанный текст.\n\n' +
+        STYLE_RULES +
+        (tokens.length ? `\n\nСохрани дословно: ${tokens.join(', ')}` : '') +
+        (examples.length ? '\n\nПримеры его сообщений:\n' + examples.join('\n---\n') : '')
+      : c.system_prompt || SYSTEM_PROMPT;
     const system =
       attempt === 0
-        ? c.system_prompt || SYSTEM_PROMPT
-        : (c.system_prompt || SYSTEM_PROMPT) +
-          ' Не повторяй формулировки исходного текста, перепиши своими словами.';
+        ? baseSystem
+        : baseSystem + ' Не повторяй формулировки исходного текста, перепиши своими словами.';
     const started = Date.now();
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), BLOCK_TIMEOUT_MS);
@@ -118,9 +159,15 @@ export class StylePostprocessor {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(process.env.STYLE_API_KEY
-            ? { Authorization: `Bearer ${process.env.STYLE_API_KEY}` }
-            : {}),
+          ...(() => {
+            const envName = (c as { api_key_env?: string }).api_key_env;
+            const key =
+              (envName ? (this.config as unknown as Record<string, string>)[envName] : '') ||
+              (envName ? process.env[envName] : '') ||
+              process.env.STYLE_API_KEY ||
+              '';
+            return key ? { Authorization: `Bearer ${key}` } : {};
+          })(),
         },
         body: JSON.stringify({
           model: c.key_api || 'style-v2',
